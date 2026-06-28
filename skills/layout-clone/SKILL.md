@@ -68,11 +68,22 @@ python3 scripts/extract_wechat_layout.py "/path/to/article.html" -o /tmp/layout-
 - 把模型生成的主题 **合并进** 现有排版工具的配置（例如主题 JSON、`<style>` 块、或 md2wechat 类工具的主题目录）。
 - **不要**自动 `git commit`，除非用户明确要求；变更前应展示 diff 摘要。
 
+## 微信发布兼容输出约束
+
+当本 skill 的产物要进入微信公众号草稿箱时，排版层必须输出微信编辑器友好的 HTML：
+
+- 不输出 `<pre>`、`<code>`、`code-snippet__*`。代码/公式/流程块改成普通灰底 `<section><p><span>` 文本块，用 `<br/>` 换行。
+- 图片只输出干净图片块：`<section style="text-align:center;"><img class="rich_pages wxw-img" src="..." data-src="..." style="display:block;width:100%;height:auto !important;"/></section>`。
+- 不给图片包叠层遮罩、错误占位、小程序链接容器、绝对定位标题、多层卡片容器。
+- 如果只是复刻参考文里的代码块样式，也只能复刻视觉，不复刻微信代码块 DOM。
+- 发布前的最终兜底和线上草稿修复属于 `wechat-article-publish` skill，但本 skill 应避免生成明显会触发兜底的结构。
+
 ## Agent 自检清单
 
 - [ ] 若 `ok: false` 或 `verification_or_risk_page: true`，已提示「本地 HTML 或 Camoufox」路径，而不是反复空跑 curl。
 - [ ] 已向用户说明：微信编辑器对 `style` / 标签有过滤，复刻是 **近似还原**，不是像素级镜像。
 - [ ] 主题配置写入位置与命名符合用户现有工具（避免新建一堆无关文件）。
+- [ ] 若产物用于公众号发布，已确认没有 `<pre>`、`<code>`、`code-snippet__*`，图片块没有复杂 wrapper。
 
 ## 与内置工具的关系
 
