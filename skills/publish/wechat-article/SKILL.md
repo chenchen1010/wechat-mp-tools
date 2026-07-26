@@ -1,6 +1,13 @@
 ---
 name: wechat-article-publish
-description: 微信公众号文章发布、草稿更新与线上草稿修复。Use when publishing WeChat Official Account articles, creating/updating drafts through the ECS wechat-mp API, re-uploading body images, fixing unsupported WeChat editor blocks, repairing img_wrapper/js_img_error failed image containers, or using chenchen1010/wechat-mp-tools publish/wechat-article workflow.
+slug: wechat-article-publish
+displayName: 微信公众号文章发布
+version: 1.0.0
+summary: 把 Markdown 文章整理并发布到公众号草稿箱，同时处理图片上传、草稿更新和常见编辑器兼容问题。
+description: 适用于微信公众号文章发布、草稿更新、正文图片重传、微信编辑器兼容性修复，以及 chenchen1010/wechat-mp-tools 的发布流程。
+tags: ["wechat", "公众号", "文章发布", "内容运营"]
+license: MIT
+homepage: https://github.com/chenchen1010/wechat-mp-tools
 ---
 
 # 微信公众号文章发布
