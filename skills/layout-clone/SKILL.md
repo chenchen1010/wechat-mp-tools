@@ -1,6 +1,13 @@
 ---
 name: wechat-layout-clone
-description: 从微信公众号图文 #js_content 抽取内联样式与 HTML 样本，供 LLM 归纳成可复用的排版主题配置。
+slug: wechat-layout-clone
+displayName: 公众号排版复刻
+version: 1.0.0
+summary: 把公众号文章的排版风格整理成可复用主题，减少手工拆样式和反复调版。
+description: 从微信公众号图文提取正文结构、内联样式和 HTML 样本，帮助运营者把喜欢的文章版式归纳成可复用的排版主题。
+tags: ["wechat", "公众号", "排版", "内容运营"]
+license: MIT
+homepage: https://github.com/chenchen1010/wechat-mp-tools
 ---
 
 # 公众号排版复刻（Layout Clone）
@@ -16,8 +23,9 @@ description: 从微信公众号图文 #js_content 抽取内联样式与 HTML 样
 - Python 3.10+
 - 建议使用本目录虚拟环境（避免系统 Python PEP 668 限制）：
 
+在本 skill 目录运行：
+
 ```bash
-cd content-matrix/skills/wechat-layout-clone
 python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -37,7 +45,7 @@ pip install -r requirements.txt
 运行提取脚本（对 URL 或本地文件均可）：
 
 ```bash
-cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)/content-matrix/skills/wechat-layout-clone"
+cd /path/to/wechat-layout-clone
 # 已按上文创建并激活 .venv 后：
 python3 scripts/extract_wechat_layout.py "https://mp.weixin.qq.com/s/xxxx" -o /tmp/layout-bundle.json
 

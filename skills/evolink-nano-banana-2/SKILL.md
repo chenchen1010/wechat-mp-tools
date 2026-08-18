@@ -1,7 +1,12 @@
 ---
 name: evolink-nano-banana-2
+slug: evolink-nano-banana-2
+displayName: Nano Banana 2 生图
 description: Nano Banana 2 — AI image generation powered by Google Gemini 3.1 Flash. Fast, versatile text-to-image and image editing via Evolink API. One API key.
 version: 1.0.0
+summary: 用 Nano Banana 2 快速生成或编辑图片，适合内容配图、创意草稿和多轮视觉迭代。
+tags: ["image-generation", "nano-banana", "gemini", "evolink"]
+license: MIT
 user-invocable: true
 metadata:
   openclaw:

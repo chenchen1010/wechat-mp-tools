@@ -1,6 +1,13 @@
 ---
 name: image-prompt-reverse
-description: 通过 Gemini 视觉模型反推图片的生成提示词，支持本地图片和 URL
+slug: image-prompt-reverse
+displayName: 图片提示词反推
+version: 1.0.0
+summary: 把参考图拆成可复用的中英文生成提示词，方便复刻风格、沉淀素材和继续改图。
+description: 分析本地图片或图片 URL，输出中文提示词、英文提示词、负面提示词、文字识别和视觉线索说明。
+tags: ["image", "prompt", "gemini", "视觉分析"]
+license: MIT
+homepage: https://github.com/chenchen1010/wechat-mp-tools
 ---
 
 # 图片提示词反推
