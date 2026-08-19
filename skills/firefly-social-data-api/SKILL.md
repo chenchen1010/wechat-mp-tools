@@ -2,7 +2,7 @@
 name: firefly-social-data-api
 slug: firefly-social-data-api
 displayName: Firefly 社媒数据助手【星元科技·Firefly·出品】
-version: 1.0.3
+version: 1.0.4
 summary: 一句话查询小红书、公众号、视频号和抖音，把内容、评论、账号和作品直接整理成选题库、达人库和竞品表。
 description: 不用再在多个平台来回搜索和复制粘贴。告诉 Agent 你想查的平台、关键词或链接，它会找到相关内容，并按你的目标整理成可筛选、可复用的数据。
 tags: ["firefly", "社媒数据", "小红书", "公众号", "视频号", "抖音", "api"]
@@ -160,7 +160,9 @@ X-Firefly-Balance: 98
 1. 用户给单条视频号分享链接时，先调用 `wechat_channels_video_detail`，从作品详情里定位博主 `username`。
 2. 调用 `wechat_channels_user_videos` 拉该博主作品列表，记录每条作品的 `id` 或 `object_id`。
 3. 若用户需要可点击的 `https://weixin.qq.com/sph/...` 链接，再对需要导出的每条作品调用 `wechat_channels_video_share_url`。
-4. 汇总时明确说明本次总积分：详情 10 积分 + 账号作品 13 积分 + 每条分享链接 13 积分。
+4. 若用户直接给 `https://weixin.qq.com/sph/<纯数字>`，不要直接判断“不能转换”。先把路径里的纯数字当作 `object_id` 调用 `wechat_channels_video_share_url`，成功后返回 `data.share_url`；最终可点击链接通常是 `https://weixin.qq.com/sph/<短字母数字 token>`。
+5. 调用 `wechat_channels_video_share_url` 时默认只传 `object_id`，不要额外传 `raw:false`；只有用户明确要求原始响应时才传 `raw:true`。
+6. 汇总时明确说明本次总积分：详情 10 积分 + 账号作品 13 积分 + 每条分享链接 13 积分；单个 `object_id` 转分享链接为 13 积分。
 
 ### REST 示例
 
