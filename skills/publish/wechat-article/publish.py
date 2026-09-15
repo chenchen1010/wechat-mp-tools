@@ -155,13 +155,17 @@ def main():
     parser.add_argument('--images', nargs='+', help='按展示顺序列出的本地 PNG/JPEG 图片')
     parser.add_argument('--receipt', help='本次推送的持久回执 JSON 路径')
     parser.add_argument('--dry-run', action='store_true', help='仅校验贴图，不请求网络')
-    parser.add_argument('--account', default='default', help='公众号账号别名: default|qwjxqn|jscxbwd')
+    parser.add_argument('--account', help='服务方为当前使用者绑定的公众号别名；也可从私有 env 读取')
     parser.add_argument('--author', default='', help='文章作者')
     parser.add_argument('--env-file', default=None, help='.env 文件路径')
     parser.add_argument('--cover-prompt', default='', help='Evolink 封面生成提示词')
     args = parser.parse_args()
 
     load_env(Path(args.env_file) if args.env_file else None)
+
+    args.account = args.account or os.environ.get('WECHAT_MP_API_ACCOUNT_DEFAULT', '').strip()
+    if not args.account and not args.dry_run:
+        parser.error('需要 --account 或私有配置 WECHAT_MP_API_ACCOUNT_DEFAULT；不能自动选择公众号')
 
     if args.type == 'newspic':
         from newspic import run

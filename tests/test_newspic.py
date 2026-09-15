@@ -133,6 +133,29 @@ class PictureTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 newspic.checked(result)
 
+    def test_cli_refuses_unbound_account(self):
+        import os
+        from unittest.mock import patch
+        with patch.dict(os.environ, {}, clear=True), patch.object(article_publish, 'load_env'), \
+             patch.object(sys, 'argv', ['publish.py', '--type', 'newspic']), \
+             patch('newspic.run') as run:
+            with self.assertRaises(SystemExit) as error:
+                article_publish.main()
+            self.assertEqual(error.exception.code, 2)
+            run.assert_not_called()
+
+    def test_cli_uses_buyer_account_config_and_explicit_override(self):
+        import os
+        from unittest.mock import patch
+        for extra, expected in [([], 'buyer-account'), (['--account', 'second-account'], 'second-account')]:
+            with self.subTest(expected=expected), \
+                 patch.dict(os.environ, {'WECHAT_MP_API_ACCOUNT_DEFAULT':'buyer-account'}, clear=True), \
+                 patch.object(article_publish, 'load_env'), \
+                 patch.object(sys, 'argv', ['publish.py', '--type', 'newspic'] + extra), \
+                 patch('newspic.run') as run:
+                article_publish.main()
+                self.assertEqual(run.call_args.args[0].account, expected)
+
     def test_article_path_preserved(self):
         from unittest.mock import patch
         with patch.object(article_publish, 'api_post', return_value={'media_id':'article'}) as mock:
