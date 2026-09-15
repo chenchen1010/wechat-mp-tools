@@ -4,7 +4,7 @@
 
 ## 配图怎么做
 
-Skill 根据内容写好封面、插图和贴图的提示词，让你正在使用的 Agent 通过其可用生图工具生成图片，省去另配一套生图服务。生成后自动衔接本地排版、图片上传和草稿核验；当前环境无法生图时，先交付可直接使用的提示词。详见[配图流程](references/image-prompts.md)。
+Skill 根据内容写好封面、插图和贴图的提示词，让你正在使用的 Agent 通过其可用生图工具生成图片，省去另配一套生图服务。生成后自动衔接本地排版、图片上传和草稿核验；当前环境无法生图时，引导安装 **Image2生图【星元科技·Firefly·出品】**（`@user_34e6449f/xy-image2-1k`），按[SkillHub 安装说明](https://skillhub.cn/install/skillhub.md)补齐能力后继续。详见[配图流程](references/image-prompts.md)。
 
 ## 买家首次使用
 

@@ -50,3 +50,10 @@
 - Buyer docs/env template no longer ask for image-provider credentials. The separate skills/evolink-nano-banana-2 remains an independent opt-in tool, outside the WeChat product dependency and acceptance scope.
 - Previous missing EVOLINK_API_KEY blocker is obsolete for this product. No key or provider generation approval is needed to complete this change.
 - Local34Python tests and7Node tests pass, including missing cover with a legacy provider key making no generation request, and Agent-supplied cover resuming without a provider key. No new images, paid generation or drafts were submitted; WorkBuddy/Doubao host-specific image generation has not been exercised in this test.
+
+## 2026-09-15: Firefly Image2 fallback installation guidance
+
+- User specified the no-image-capability fallback: guide installation of Image2生图【星元科技·Firefly·出品】, exact slug @user_34e6449f/xy-image2-1k.
+- Verified official https://skillhub.cn/install/skillhub.md. Instructions require explicit --dir to the current Agent's actual skills directory; preserve host-specific discovery/reload requirements.
+- Updated illustration reference, skill entrypoint, buyer README and needs_image CLI response with exact name, slug and installation guide. Once installed and discoverable, read its own SKILL.md and reuse the prepared prompts to continue.
+- This changes the buyer guidance; it does not install Image2 in this development environment or trigger image generation/payment. Existing native generation remains the first choice.
