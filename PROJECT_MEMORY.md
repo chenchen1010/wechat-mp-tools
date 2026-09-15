@@ -11,10 +11,12 @@
 - The user confirmed the target account alias before the live run. Live upload and draft/get passed: newspic type, exact title/content, two image IDs in the expected order. No public publish or broadcast was submitted. Browser preview was unavailable due to site-safety policy; API verification is complete, backend visual acceptance is not.
 - Credentials stay in private env files; draft receipts and test media stay outside the repository.
 
-## 2026-09-15: Third-party buyer onboarding
+## 2026-09-15: Buyer-held credentials (supersedes the earlier binding design)
 
-- Product intent is third-party sales. Buyers share the seller server egress IP (documented as 8.153.207.214), and must add it to their own Official Account IP whitelist and bind their own account.
-- The previous default-to-account-name mapping was confirmed by the operator for a self-use test only. It is not a product-wide mapping or a buyer default.
-- Skill 1.1.1 removes seller-specific local env paths and production endpoint defaults from buyer onboarding. CLI now requires explicit account or WECHAT_MP_API_ACCOUNT_DEFAULT from buyer config; it does not silently select default.
-- Existing server uses one process-wide API_TOKEN with static account aliases, not buyer-scoped authorization. No new backend tenancy or automatic purchase/binding service has been implemented or deployed. Dedicated buyer instances on the same egress IP are one supported deployment model; a shared multi-buyer service needs server-side authorization binding before sale.
-- Validation: 14 unittests pass, including missing-account refusal and buyer env/explicit account selection; Python compilation and diff check pass. Existing live picture-draft test is unchanged; no additional draft created in this change.
+- Buyers own their AppID/AppSecret and retain them in private local env files. Every call carries them in HTTPS headers to the shared fixed-IP service; no seller-side account provisioning/binding is required.
+- Buyers add the documented server egress IP 8.153.207.214 to their own account whitelist. The previous operator default/account-name mapping is only a self-use test fact.
+- Skill1.2.0 client defaults to request mode, strips account aliases, and verifies health credential_mode=request before sending credentials or writes. It requires HTTPS and refuses redirects. Receipts scope identity by hashed AppID.
+- Server request mode accepts only current request credentials, ignores legacy account selection, uses stable_token without a local cross-request token/credential cache, and redacts credentials/tokens from responses. No file/database logging or storage of buyer secrets is added. Reverse-proxy/APM configuration must also exclude sensitive headers/bodies/upstream URLs before deployment.
+- Existing legacy mode remains unchanged for older deployments. Buyer instructions prohibit falling back to legacy. Server request mode requires explicit WECHAT_CREDENTIAL_MODE=request; the provided server env template has this setting and contains no buyer credentials.
+- Local verification: 19 Python cases and 6 Node HTTP integration cases pass, including concurrent buyer isolation, missing/invalid credentials, legacy-server refusal, redirect/HTTP refusal, explicit env account selection, and receipt recovery. Node uses mocked WeChat upstream, not real buyer accounts.
+- The request-credential backend has NOT been deployed or live-tested. The earlier successful picture draft used the legacy operator service; it is not evidence for request-mode production operation. No additional draft, payment, or public publish was made.

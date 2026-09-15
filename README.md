@@ -9,7 +9,7 @@
 Markdown → 排版 → 微信草稿箱的完整发布流水线。
 
 - 支持 Wenyan MCP 真实排版
-- 共用服务方固定公网 IP：买家将 `8.153.207.214` 加入自己公众号的白名单后完成绑定
+- 共用服务方固定公网 IP：买家将 `8.153.207.214` 加入自己公众号的白名单；自己的 AppID/AppSecret 留在本机，每次调用携带
 - 支持多公众号账号
 - 支持贴图（小绿书）：按顺序上传图片、推送草稿、回读核对；详见 [发布说明](skills/publish/wechat-article/SKILL.md)
 
@@ -25,7 +25,7 @@ Markdown → 排版 → 微信草稿箱的完整发布流水线。
 
 ```bash
 cp .env.example .env
-# 填入服务方为该买家开通的专用地址、访问凭证和账号别名
+# 填入买家自己的AppID/AppSecret，以及服务方地址和访问凭证
 ```
 
 ## 依赖
@@ -41,4 +41,4 @@ pip install beautifulsoup4
 node api-server/server.mjs
 ```
 
-买家配置与服务方部署边界见[使用说明](skills/publish/wechat-article/README.md)。当前代理不具备多买家权限隔离，不可将自用管理令牌分发给买家。
+买家配置与服务方部署要求见[使用说明](skills/publish/wechat-article/README.md)。买家模式使用每次携带的本地公众号凭证，不需要卖家预存或绑定公众号；服务器须启用 `WECHAT_CREDENTIAL_MODE=request`。

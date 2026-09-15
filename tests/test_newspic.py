@@ -136,7 +136,7 @@ class PictureTests(unittest.TestCase):
     def test_cli_refuses_unbound_account(self):
         import os
         from unittest.mock import patch
-        with patch.dict(os.environ, {}, clear=True), patch.object(article_publish, 'load_env'), \
+        with patch.dict(os.environ, {'WECHAT_MP_CREDENTIAL_MODE':'legacy'}, clear=True), patch.object(article_publish, 'load_env'), \
              patch.object(sys, 'argv', ['publish.py', '--type', 'newspic']), \
              patch('newspic.run') as run:
             with self.assertRaises(SystemExit) as error:
@@ -149,12 +149,71 @@ class PictureTests(unittest.TestCase):
         from unittest.mock import patch
         for extra, expected in [([], 'buyer-account'), (['--account', 'second-account'], 'second-account')]:
             with self.subTest(expected=expected), \
-                 patch.dict(os.environ, {'WECHAT_MP_API_ACCOUNT_DEFAULT':'buyer-account'}, clear=True), \
+                 patch.dict(os.environ, {'WECHAT_MP_API_ACCOUNT_DEFAULT':'buyer-account', 'WECHAT_MP_CREDENTIAL_MODE':'legacy'}, clear=True), \
                  patch.object(article_publish, 'load_env'), \
                  patch.object(sys, 'argv', ['publish.py', '--type', 'newspic'] + extra), \
                  patch('newspic.run') as run:
                 article_publish.main()
                 self.assertEqual(run.call_args.args[0].account, expected)
+
+    def test_buyer_credentials_sent_only_as_headers(self):
+        import io, os
+        from unittest.mock import patch
+        values = {'WECHAT_MP_APP_ID':'wx'+'A'*16, 'WECHAT_MP_APP_SECRET':'a'*32}
+        opener = Mock()
+        opener.open.side_effect = [io.BytesIO(b'{"credential_mode":"request"}'), io.BytesIO(b'{"media_id":"draft"}')]
+        with patch.dict(os.environ, values, clear=True), patch.object(article_publish.urllib.request, 'build_opener', return_value=opener):
+            article_publish.api_post('https://service.example','proxy-token','/wechat/draft/add',{'account':'default','articles':[]})
+        req = opener.open.call_args_list[1].args[0]
+        self.assertEqual(req.get_header('X-wechat-appid'), values['WECHAT_MP_APP_ID'])
+        self.assertEqual(req.get_header('X-wechat-appsecret'), values['WECHAT_MP_APP_SECRET'])
+        self.assertNotIn('account', json.loads(req.data))
+        self.assertNotIn(values['WECHAT_MP_APP_SECRET'], req.full_url)
+        self.assertNotIn(values['WECHAT_MP_APP_SECRET'], req.data.decode())
+
+    def test_buyer_client_refuses_legacy_server_before_sending_secrets(self):
+        import io, os
+        from unittest.mock import patch
+        opener = Mock()
+        opener.open.return_value = io.BytesIO(b'{"ok":true,"accounts":["default"]}')
+        with patch.dict(os.environ, {'WECHAT_MP_APP_ID':'wx'+'A'*16,'WECHAT_MP_APP_SECRET':'a'*32}, clear=True), \
+             patch.object(article_publish.urllib.request, 'build_opener', return_value=opener):
+            with self.assertRaises(RuntimeError):
+                article_publish.api_post('https://service.example','token','/wechat/draft/add',{})
+        self.assertEqual(opener.open.call_count, 1)
+        self.assertIsInstance(opener.open.call_args.args[0], str)
+
+    def test_buyer_client_refuses_http_and_redirects(self):
+        import os
+        from unittest.mock import patch
+        with patch.dict(os.environ, {}, clear=True), self.assertRaises(ValueError):
+            article_publish.api_post('http://service.example','token','/wechat/draft/add',{})
+        with self.assertRaises(RuntimeError):
+            article_publish.NoRedirect().redirect_request(None,None,302,'',{},'https://other.example')
+
+    def test_buyer_mode_identity_comes_from_local_appid(self):
+        import os
+        from unittest.mock import patch
+        identities = []
+        for character in ['A', 'B']:
+            with patch.dict(os.environ, {'WECHAT_MP_APP_ID':'wx'+character*16,'WECHAT_MP_APP_SECRET':'a'*32}, clear=True), \
+                 patch.object(article_publish, 'load_env'), \
+                 patch.object(sys, 'argv', ['publish.py','--type','newspic']), patch('newspic.run') as run:
+                article_publish.main()
+                identities.append(run.call_args.args[0].account)
+        self.assertNotEqual(*identities)
+        self.assertTrue(all(value.startswith('appid-sha256:') for value in identities))
+
+    def test_explicit_local_env_overrides_previous_account(self):
+        import os
+        from unittest.mock import patch
+        env_file = self.root / 'buyer.env'
+        env_file.write_text('WECHAT_MP_APP_ID=wx' + 'B'*16 + '\nWECHAT_MP_APP_SECRET=' + 'b'*32 + '\n')
+        with patch.dict(os.environ, {'WECHAT_MP_APP_ID':'wx'+'A'*16,'WECHAT_MP_APP_SECRET':'a'*32}, clear=True):
+            article_publish.load_env(env_file)
+            self.assertEqual(article_publish.request_credentials(), ('wx'+'B'*16, 'b'*32))
+            with self.assertRaises(ValueError):
+                article_publish.load_env(self.root/'missing.env')
 
     def test_article_path_preserved(self):
         from unittest.mock import patch

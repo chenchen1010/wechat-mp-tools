@@ -11,17 +11,21 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import re
 import sys
 import time
 import urllib.request
+import urllib.parse
 from pathlib import Path
 
 
 def load_env(env_path: Path | None = None):
     """从 .env 文件加载环境变量"""
+    if env_path is not None and not env_path.is_file():
+        raise ValueError('指定的本地 env 文件不存在')
     candidates = [env_path] if env_path else [
         Path.cwd() / '.env',
         Path(__file__).resolve().parents[3] / '.env',
@@ -33,20 +37,59 @@ def load_env(env_path: Path | None = None):
                 if not line or line.startswith('#') or '=' not in line:
                     continue
                 k, v = line.split('=', 1)
-                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+                value = v.strip().strip('"').strip("'")
+                if env_path is not None:
+                    os.environ[k.strip()] = value
+                else:
+                    os.environ.setdefault(k.strip(), value)
             return
 
 
+def request_credentials():
+    appid = os.environ.get('WECHAT_MP_APP_ID', '').strip()
+    secret = os.environ.get('WECHAT_MP_APP_SECRET', '').strip()
+    if not re.fullmatch(r'wx[a-zA-Z0-9]{16}', appid) or not re.fullmatch(r'[a-zA-Z0-9]{32}', secret):
+        raise ValueError('请在自己的本地 env 配置有效 WECHAT_MP_APP_ID 和 WECHAT_MP_APP_SECRET')
+    return appid, secret
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise RuntimeError('发布服务发生重定向，已停止以避免转发公众号凭证')
+
+
 def api_post(base_url: str, token: str, endpoint: str, payload: dict, timeout: int = 60) -> dict:
-    """调用 ECS 代理 API"""
-    url = f"{base_url}{endpoint}"
-    data = json.dumps(payload).encode('utf-8')
-    req = urllib.request.Request(url, data=data, method='POST', headers={
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {token}',
-    })
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.loads(resp.read().decode('utf-8'))
+    """Request mode carries local buyer credentials in HTTPS headers, never URLs."""
+    mode = os.environ.get('WECHAT_MP_CREDENTIAL_MODE', 'request')
+    if mode not in ('request', 'legacy'):
+        raise ValueError('未知公众号凭证模式')
+    headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
+    opener = urllib.request.build_opener(NoRedirect())
+    if mode == 'request':
+        parsed = urllib.parse.urlsplit(base_url)
+        if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise ValueError('携带公众号凭证时必须使用无查询参数的 HTTPS 服务地址')
+        # Old servers ignore credential headers and select their stored default.
+        # Confirm request mode BEFORE sending credentials or performing any write.
+        with opener.open(f'{base_url.rstrip("/")}/health', timeout=timeout) as health:
+            capabilities = json.loads(health.read().decode('utf-8'))
+        if capabilities.get('credential_mode') != 'request':
+            raise RuntimeError('该服务器尚未启用每次携带凭证的买家模式；已停止，未提交到旧服务账号')
+        appid, secret = request_credentials()
+        headers.update({'X-Wechat-Appid': appid, 'X-Wechat-Appsecret': secret})
+        payload = {k: v for k, v in payload.items() if k != 'account'}
+    req = urllib.request.Request(f'{base_url}{endpoint}', data=json.dumps(payload).encode('utf-8'),
+                                 method='POST', headers=headers)
+    with opener.open(req, timeout=timeout) as resp:
+        result = json.loads(resp.read().decode('utf-8'))
+    if mode == 'request':
+        # Do not let an upstream error response echo credentials into logs.
+        raw = json.dumps(result)
+        for sensitive in (secret, appid, token):
+            if sensitive:
+                raw = raw.replace(sensitive, '[redacted]')
+        result = json.loads(raw)
+    return result
 
 
 def upload_body_image(base_url: str, token: str, account: str, image_path: Path) -> str:
@@ -163,9 +206,21 @@ def main():
 
     load_env(Path(args.env_file) if args.env_file else None)
 
-    args.account = args.account or os.environ.get('WECHAT_MP_API_ACCOUNT_DEFAULT', '').strip()
-    if not args.account and not args.dry_run:
-        parser.error('需要 --account 或私有配置 WECHAT_MP_API_ACCOUNT_DEFAULT；不能自动选择公众号')
+    mode = os.environ.get('WECHAT_MP_CREDENTIAL_MODE', 'request')
+    if mode not in ('request', 'legacy'):
+        parser.error('未知公众号凭证模式')
+    if mode == 'request' and not args.dry_run:
+        try:
+            appid, _ = request_credentials()
+        except ValueError as exc:
+            parser.error(str(exc))
+        if args.account:
+            parser.error('买家模式由本地 AppID 确定公众号，不使用 --account 别名')
+        args.account = 'appid-sha256:' + hashlib.sha256(appid.encode()).hexdigest()
+    else:
+        args.account = args.account or os.environ.get('WECHAT_MP_API_ACCOUNT_DEFAULT', '').strip()
+        if not args.account and not args.dry_run:
+            parser.error('旧服务模式需要显式账号配置，不能自动选择公众号')
 
     if args.type == 'newspic':
         from newspic import run

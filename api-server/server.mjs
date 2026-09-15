@@ -2,13 +2,18 @@
 import http from 'node:http';
 import { URL } from 'node:url';
 import { Buffer } from 'node:buffer';
+import { pathToFileURL } from 'node:url';
 
-const PORT = Number(process.env.PORT || 18890);
-const API_TOKEN = process.env.API_TOKEN || '';
+export function createWechatServer({ credentialMode = process.env.WECHAT_CREDENTIAL_MODE || 'legacy', apiToken = process.env.API_TOKEN || '', fetchImpl = globalThis.fetch } = {}) {
+const API_TOKEN = apiToken;
+const REQUEST_CREDENTIALS = credentialMode === 'request';
+if (!['legacy', 'request'].includes(credentialMode)) throw new Error('invalid credential mode');
+if (REQUEST_CREDENTIALS && !API_TOKEN) throw new Error('request mode requires API_TOKEN');
+const fetch = fetchImpl;
 const TOKEN_SKEW_MS = 60_000;
 const BODY_LIMIT = 30 * 1024 * 1024;
 
-const ACCOUNTS = {
+const ACCOUNTS = REQUEST_CREDENTIALS ? {} : {
   default: {
     appId: process.env.WECHAT_APP_ID || '',
     appSecret: process.env.WECHAT_APP_SECRET || '',
@@ -26,7 +31,13 @@ const ACCOUNTS = {
 const tokenCache = new Map();
 
 function json(res, status, payload) {
-  const data = Buffer.from(JSON.stringify(payload, null, 2), 'utf8');
+  let serialized = JSON.stringify(payload, null, 2);
+  if (REQUEST_CREDENTIALS) {
+    for (const value of [API_TOKEN, ...Object.values(res.requestCredentials || {})]) {
+      if (value) serialized = serialized.split(value).join('[redacted]');
+    }
+  }
+  const data = Buffer.from(serialized, 'utf8');
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': String(data.length),
@@ -95,6 +106,21 @@ async function fetchJson(url, options = {}) {
 }
 
 async function getAccessToken(accountName = 'default') {
+  if (REQUEST_CREDENTIALS) {
+    // Only the current request's headers supply credentials. No account lookup/cache.
+    const { appId, appSecret } = accountName;
+    const { status, data } = await fetchJson('https://api.weixin.qq.com/cgi-bin/stable_token', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ grant_type: 'client_credential', appid: appId, secret: appSecret, force_refresh: false }),
+    });
+    if (status !== 200 || data.errcode || !data.access_token) {
+      const error = new Error('WeChat authentication failed');
+      error.wechatCode = Number.isInteger(data.errcode) ? data.errcode : undefined;
+      throw error;
+    }
+    accountName.accessToken = data.access_token;
+    return data.access_token;
+  }
   const { key, appId, appSecret } = getAccount(accountName);
   const cached = tokenCache.get(key);
   if (cached && cached.expiresAt > Date.now() + TOKEN_SKEW_MS) {
@@ -132,6 +158,7 @@ async function loadBinaryInput({ filename, image_base64, file_base64, image_url,
   }
 
   if (remoteUrl) {
+    if (REQUEST_CREDENTIALS) throw new Error('request mode requires local image bytes');
     const resp = await fetch(String(remoteUrl));
     if (!resp.ok) {
       throw new Error(`download failed: ${resp.status} ${resp.statusText}`);
@@ -217,7 +244,8 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, {
         ok: true,
         service: 'wechat-mp-api',
-        accounts: availableAccounts(),
+        credential_mode: credentialMode,
+        ...(REQUEST_CREDENTIALS ? {} : { accounts: availableAccounts() }),
         now: new Date().toISOString(),
       });
     }
@@ -230,12 +258,25 @@ const server = http.createServer(async (req, res) => {
       return json(res, 405, { ok: false, error: 'method not allowed' });
     }
 
+    // Validate before reading/uploads; ignore any client-supplied legacy account alias.
+    let credentials;
+    if (REQUEST_CREDENTIALS) {
+      const appId = req.headers['x-wechat-appid'];
+      const appSecret = req.headers['x-wechat-appsecret'];
+      if (typeof appId !== 'string' || !/^wx[a-zA-Z0-9]{16}$/.test(appId)
+          || typeof appSecret !== 'string' || !/^[a-zA-Z0-9]{32}$/.test(appSecret)) {
+        return json(res, 400, { ok: false, error: 'valid WeChat credentials required on every request' });
+      }
+      credentials = { appId, appSecret };
+      res.requestCredentials = credentials;
+    }
     const body = await parseJsonBody(req);
+    if (REQUEST_CREDENTIALS) body.account = credentials;
 
     if (url.pathname === '/token/test') {
       const account = body.account || 'default';
       await getAccessToken(account);
-      return json(res, 200, { ok: true, account, message: 'token ok' });
+      return json(res, 200, { ok: true, ...(REQUEST_CREDENTIALS ? {} : { account }), message: 'token ok' });
     }
 
     if (url.pathname === '/wechat/media/uploadimg') {
@@ -276,11 +317,19 @@ const server = http.createServer(async (req, res) => {
   } catch (err) {
     return json(res, 500, {
       ok: false,
-      error: err?.message || String(err),
+      error: REQUEST_CREDENTIALS ? 'WeChat proxy request failed' : (err?.message || String(err)),
+      ...(REQUEST_CREDENTIALS && Number.isInteger(err?.wechatCode) ? { errcode: err.wechatCode } : {}),
     });
   }
 });
 
-server.listen(PORT, '127.0.0.1', () => {
-  console.log(`[wechat-mp-api] listening on 127.0.0.1:${PORT}`);
-});
+return server;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const PORT = Number(process.env.PORT || 18890);
+  const server = createWechatServer();
+  server.listen(PORT, '127.0.0.1', () => {
+    console.log(`[wechat-mp-api] listening on 127.0.0.1:${PORT}`);
+  });
+}
