@@ -1,6 +1,8 @@
 # API Parameters Reference
 
-Full parameter reference for the Nano Banana 2 image generation API via EvoLink.
+Parameter reference for Nano Banana 2 via EvoLink. Local CLI uses one image per receipt and requires `--output`; the tables below describe provider/MCP capabilities. Use ratio `size` and explicit `quality` (`1K` by default locally).
+
+Current provider references: [model and pricing](https://evolink.ai/nano-banana-2), [async task status](https://evolink.ai/docs/en/api-manual/task-management/get-task-detail). Poll responses contain `results` or `result_data`; final `usage` and submission reservations are distinct.
 
 ## generate_image
 

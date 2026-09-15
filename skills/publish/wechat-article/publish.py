@@ -16,7 +16,6 @@ import json
 import os
 import re
 import sys
-import time
 import urllib.request
 import urllib.parse
 from pathlib import Path
@@ -131,33 +130,10 @@ def create_draft(base_url: str, token: str, account: str, article: dict) -> dict
 
 
 def generate_cover_image(evolink_key: str, prompt: str, output_path: str) -> bool:
-    """用 Evolink 生成封面图"""
-    req = urllib.request.Request(
-        'https://api.evolink.io/v1/images/generations',
-        data=json.dumps({
-            'model': 'z-image-turbo',
-            'prompt': prompt,
-            'size': '16:9',
-            'nsfw_check': False,
-        }).encode('utf-8'),
-        headers={
-            'Authorization': f'Bearer {evolink_key}',
-            'Content-Type': 'application/json',
-        },
-        method='POST',
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode('utf-8'))
-        if 'data' not in data or not data['data']:
-            print(f'生图失败: {data}', file=sys.stderr)
-            return False
-        with urllib.request.urlopen(data['data'][0]['url'], timeout=60) as img:
-            Path(output_path).write_bytes(img.read())
-        return True
-    except Exception as e:
-        print(f'生图异常: {e}', file=sys.stderr)
-        return False
+    """Generate and save an async Nano Banana 2 task; never silently retry a submission."""
+    from evolink_image import generate
+    generate(evolink_key, prompt, output_path)
+    return True
 
 
 def parse_frontmatter(content: str) -> tuple[dict, str]:
@@ -177,23 +153,18 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
 
 
 def markdown_to_html(body: str) -> str:
-    """简易 Markdown → HTML（仅用于无 Wenyan 时的兜底）"""
-    html = body
-    html = re.sub(r'^###\s+(.+)$', r'<h3>\1</h3>', html, flags=re.M)
-    html = re.sub(r'^##\s+(.+)$', r'<h2>\1</h2>', html, flags=re.M)
-    html = re.sub(r'^#\s+(.+)$', r'<h1>\1</h1>', html, flags=re.M)
-    html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
-    html = re.sub(r'!\[.*?\]\((.+?)\)', r'<img src="\1" style="display:block;width:100%;"/>', html)
-    html = re.sub(r'\[(.+?)\]\((.+?)\)', r'<a href="\2">\1</a>', html)
-    html = html.replace('\n\n', '</p><p>')
-    return f'<p>{html}</p>'
+    """Render actual Markdown blocks before WeChat sanitization."""
+    import markdown
+    return markdown.markdown(body, extensions=['tables', 'fenced_code', 'sane_lists'])
 
 
 def main():
     parser = argparse.ArgumentParser(description='微信公众号文章发布（ECS 代理）')
     parser.add_argument('--markdown', '-m', help='Markdown 文件路径')
+    parser.add_argument('--html', help='已完成排版的本地 HTML')
+    parser.add_argument('--cover', help='HTML 文章本地封面路径')
     parser.add_argument('--type', choices=['news', 'newspic'], default='news')
-    parser.add_argument('--title', help='贴图标题')
+    parser.add_argument('--title', help='贴图或 HTML 文章标题')
     parser.add_argument('--content-file', help='贴图纯文本正文文件')
     parser.add_argument('--images', nargs='+', help='按展示顺序列出的本地 PNG/JPEG 图片')
     parser.add_argument('--receipt', help='本次推送的持久回执 JSON 路径')
@@ -233,7 +204,13 @@ def main():
                 print(str(exc), file=sys.stderr)
             sys.exit(1)
         return
-    if not args.markdown or args.dry_run or args.images or args.content_file or args.title or args.receipt:
+    if args.html:
+        if not args.title or not args.cover or not args.receipt or args.markdown or args.dry_run:
+            parser.error('HTML 文章需要 --title --cover --receipt')
+        from article_html import run
+        run(args, sys.modules[__name__])
+        return
+    if not args.markdown or args.dry_run or args.images or args.content_file or args.title:
         parser.error('文章模式需要 -m；贴图参数和 --dry-run 仅用于 --type newspic')
 
     base_url = os.environ.get('WECHAT_MP_API_BASE_URL', '')
@@ -248,7 +225,12 @@ def main():
     meta, body = parse_frontmatter(content)
     title = meta.get('title', md_path.stem)
     cover_path = meta.get('cover', '')
+    if cover_path:
+        cover_path = str((md_path.resolve().parent / cover_path).resolve())
     author = args.author or meta.get('author', '')
+    from article_html import prepare_html
+    rendered_html = markdown_to_html(body)
+    prepare_html(rendered_html, md_path.resolve().parent)
     print(f'1/4 解析完成: {title}')
 
     # 2. 封面
@@ -257,7 +239,7 @@ def main():
         evolink_key = os.environ.get('EVOLINK_API_KEY', '')
         if evolink_key:
             print('2/4 生成封面...')
-            temp_cover = f'/tmp/cover_{int(time.time())}.jpg'
+            temp_cover = str(md_path.resolve().with_suffix('.cover.png'))
             prompt = args.cover_prompt or f'Professional cover for: {title}, modern digital art, 16:9'
             if not generate_cover_image(evolink_key, prompt, temp_cover):
                 sys.exit(1)
@@ -268,30 +250,16 @@ def main():
     else:
         print(f'2/4 使用封面: {cover_path}')
 
-    thumb_media_id = upload_cover(base_url, api_token, args.account, Path(cover_path))
-    print(f'  ✓ 封面 media_id: {thumb_media_id}')
-
-    # 3. 渲染 HTML（简易兜底，生产建议用 Wenyan MCP）
-    print('3/4 渲染 HTML...')
-    html_content = markdown_to_html(body)
-
-    # 4. 创建草稿
-    print('4/4 创建草稿...')
-    result = create_draft(base_url, api_token, args.account, {
-        'title': title,
-        'author': author,
-        'content': html_content,
-        'thumb_media_id': thumb_media_id,
-        'show_cover_pic': 1,
-        'need_open_comment': 1,
-        'only_fans_can_comment': 0,
-    })
-
-    if temp_cover and Path(temp_cover).exists():
-        Path(temp_cover).unlink()
-
-    print(f'\n✅ 草稿创建成功!')
-    print(f'   media_id: {result["media_id"]}')
+    # Both Markdown and copied-layout HTML use the same upload + durable receipt path.
+    rendered_path = md_path.resolve().with_suffix('.rendered.html')
+    rendered_path.write_text(rendered_html, encoding='utf-8')
+    args.html = str(rendered_path)
+    args.cover = cover_path
+    args.title = title
+    args.author = author
+    args.receipt = args.receipt or str(md_path.resolve().with_suffix('.draft.json'))
+    from article_html import run
+    run(args, sys.modules[__name__])
 
 
 if __name__ == '__main__':

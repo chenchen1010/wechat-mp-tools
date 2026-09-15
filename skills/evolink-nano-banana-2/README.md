@@ -204,16 +204,16 @@ The skill includes `scripts/evolink-image-gen.sh` for direct command-line usage:
 
 ```bash
 # Text-to-image
-./scripts/evolink-image-gen.sh "Watercolor mountain sunset" --size 1024x1536
+./scripts/evolink-image-gen.sh "Watercolor mountain sunset" --size 2:3 --output ./generated-image.png
 
 # With reference image
-./scripts/evolink-image-gen.sh "Make it look vintage" --image "https://example.com/photo.jpg"
+./scripts/evolink-image-gen.sh "Make it look vintage" --image "https://example.com/photo.jpg" --output ./generated-image.png
 
 # Batch generation (4 variations)
-./scripts/evolink-image-gen.sh "Coffee shop logo design" --n 4
+./scripts/evolink-image-gen.sh "Coffee shop logo design" --n 1 --output ./generated-image.png
 
 # Quick iteration with lite variant
-./scripts/evolink-image-gen.sh "Abstract geometric pattern" --model nano-banana-2-lite
+./scripts/evolink-image-gen.sh "Abstract geometric pattern" --model nano-banana-2-lite --output ./generated-image.png
 ```
 
 ### API Reference

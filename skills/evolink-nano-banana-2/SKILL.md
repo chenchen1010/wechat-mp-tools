@@ -3,7 +3,7 @@ name: evolink-nano-banana-2
 slug: evolink-nano-banana-2
 displayName: Nano Banana 2 生图
 description: Nano Banana 2 — AI image generation powered by Google Gemini 3.1 Flash. Fast, versatile text-to-image and image editing via Evolink API. One API key.
-version: 1.0.0
+version: 1.1.0
 summary: 用 Nano Banana 2 快速生成或编辑图片，适合内容配图、创意草稿和多轮视觉迭代。
 tags: ["image-generation", "nano-banana", "gemini", "evolink"]
 license: MIT
@@ -58,7 +58,7 @@ Get your API key at [evolink.ai](https://evolink.ai) → Dashboard → API Keys.
 
 **Claude Code:** `claude mcp add evolink-media -e EVOLINK_API_KEY=your-key -- npx -y @evolinkai/evolink-media@latest`
 
-**Claude Desktop / Cursor** — add MCP server with command `npx -y @evolinkai/evolink-media@latest` and env `EVOLINK_API_KEY=your-key`. See `references/image-api-params.md` for full config JSON.
+**Claude Desktop / Cursor** — add MCP server with command `npx -y @evolinkai/evolink-media@latest` and env `EVOLINK_API_KEY=your-key`. See `references/api-params.md` for full config JSON.
 
 ## Core Principles
 
@@ -185,13 +185,28 @@ When Nano Banana 2 is used inside an article / social-post workflow with multipl
 | `service_error` | Yes | Retry after 1 min |
 | `generation_failed_no_content` | Yes | Modify prompt, retry |
 
-Full error reference: `references/image-api-params.md`
+Full error reference: `references/api-params.md`
 
 ## Without MCP Server
 
-Use Evolink's file hosting API for image uploads (72h expiry). See `references/file-api.md` for curl commands.
+Use Evolink's file hosting API for image uploads (72h expiry). See `references/api-params.md` for curl commands.
 
 ## References
 
-- `references/image-api-params.md` — Complete API parameters, model details, polling strategy, error codes
-- `references/file-api.md` — File hosting API (curl upload/list/delete)
+- `references/api-params.md` — Complete API parameters, model details, polling strategy, error codes
+- `references/api-params.md` — File hosting API (curl upload/list/delete)
+
+## 可恢复的本地生图（文章与贴图推荐）
+
+先安装 `python3 -m pip install -r requirements.txt`，从自己的私有 env 加载 `EVOLINK_API_KEY`。生成配图后保留原图，可同时用于文章插图和贴图。
+
+```bash
+bash scripts/evolink-image-gen.sh "清晨书桌与一本打开的笔记本，温暖自然光，无文字" --size 16:9 --quality 1K --output ./cover.png
+```
+
+- 本地脚本每个输出只提交一张图；批量时为每张图指定独立输出与回执。
+- 同名 `.generation.json` 记录任务、进度、实际用量和图片哈希；重复相同命令继续查询原任务，不重新生成。
+- `--no-poll` 仅提交并保存任务；之后原命令去掉该参数继续等待和下载。服务端已接收但本地未获得任务号时，停止并核对服务商记录。
+- `status=downloaded` 才表示图片已下载并完整解码。交付前还需实际打开图片检查，再嵌入文章/贴图预览。
+- 失败、超时和结果不明都不自动重提付费任务。费用以服务商返回的 `usage` 为准，不能将预留积分当最终扣费。
+- 2026-09-15：本地异步与恢复测试通过；本轮缺少可用 EvoLink 凭证，真实生成尚未验收。

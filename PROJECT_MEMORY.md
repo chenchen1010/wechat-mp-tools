@@ -30,3 +30,14 @@
 - 22 Python tests and 7 Node18 HTTP integration tests pass. PM2 state saved, original/new internal and public health pass; new process has no stored WeChat secret env.
 - Reverse proxy disables request buffering/access logs for new route. Backup at /www/wwwroot/wechat-skill-api/backups/cs.qwjxqn.xyz.conf.before; rollback removes new route/process while preserving old service.
 - Backend visual UI acceptance unavailable due browser site-safety restriction; real draft readback and returned image visual inspection completed. Independent image generation/layout extraction and payment were not exercised by this publishing-API smoke.
+
+## 2026-09-15: Expanded layout and image-generation acceptance
+
+- The user corrected the acceptance scope to include layout copying and real generation, not just the publishing API.
+- Extracted layout from an authentic locally saved WeChat article (2026-07-03, title AI知识星球，自己会运营、会答疑、会进化). Source mostly relies on WeChat defaults; theme separates observed bold/paragraph/image structure from inferred font/spacing defaults. No fresh online article fetch or pixel-identical clone is claimed.
+- Applied the inferred theme to newly written content. Desktop and390px mobile screenshots visually checked. Pushed 排版复刻实测｜新内容应用 to the confirmed self-use account; readback verified title,8paragraphs,2bold sections,inline emphasis,body style and image.
+- Replaced regex Markdown rendering with Python Markdown and unified Markdown/HTML publishing through durable receipts. Local images are decoded before any write, uploaded and replaced by WeChat URLs. HTML sanitizes active content and converts code blocks. Markdown全流程实测 passed live title/heading/emphasis/table/image/code-compatible readback.
+- Fixed automatic cover integration from obsolete api.evolink.io/synchronous z-image-turbo assumptions to api.evolink.ai async Nano Banana2. Durable receipts persist task ID, progress and usage; unknown submissions never auto-retry; downloaded results require complete image decoding. Local generator is bundled identically in both standalone image and publishing skills, checked by test.
+- Local suite33Python cases and7Node integration cases pass. Generation success/failure/resume tests use mocked provider; they are NOT paid/live image generation evidence.
+- BLOCKER: no usable EVOLINK_API_KEY found in the current environment or relevant local configs. Asked user for private env path. No paid generation submitted. Real generation, image editing/reference generation, and new-generated-image-to-draft acceptance remain outstanding. Do not declare all functions accepted or ready for sale.
+- Evidence is outside Git at /Users/burning/Documents/workbuddy/outputs/wechat-full-workflow-20260915. Earlier publish-API live receipts remain in wechat-public-smoke-20260915. Browser policy still prevents WeChat backend UI acceptance; local previews and API readback are separate evidence.

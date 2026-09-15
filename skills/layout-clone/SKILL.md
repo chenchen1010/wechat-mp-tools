@@ -2,7 +2,7 @@
 name: wechat-layout-clone
 slug: wechat-layout-clone
 displayName: 公众号排版复刻
-version: 1.0.0
+version: 1.0.1
 summary: 把公众号文章的排版风格整理成可复用主题，减少手工拆样式和反复调版。
 description: 从微信公众号图文提取正文结构、内联样式和 HTML 样本，帮助运营者把喜欢的文章版式归纳成可复用的排版主题。
 tags: ["wechat", "公众号", "排版", "内容运营"]
@@ -108,3 +108,9 @@ python3 scripts/extract_wechat_layout.py "/path/to/article.html" -o /tmp/layout-
 - 仅适用于 **图文** 页；视频号、纯卡片页可能无 `#js_content`。
 - 部分文章样式在 **外链 CSS** 或微信私有类名上，仅靠内联 style 可能不完整，需在 Step 3 让模型结合 `sample_html` 推断。
 - 请遵守版权与平台规则：复刻指**样式学习**，勿盗用他人商标与付费素材。
+
+## 应用与验收
+
+主题 JSON 应分别记录 `observed`（参考正文中直接提取）与 `fallback_not_observed`（为兼容补充），避免把缺失的外部 CSS 当作已经提取。
+
+把主题应用到新内容，检查桌面和手机宽度预览。交给发布 Skill 的 `--html` 入口后，回读核对段落、强调、内联样式与图片；不要仅以提取脚本 `ok:true` 判定整条流程成功。

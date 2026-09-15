@@ -8,7 +8,7 @@
 
 Markdown → 排版 → 微信草稿箱的完整发布流水线。
 
-- 支持 Wenyan MCP 真实排版
+- 支持 Markdown 渲染及接收排版工具输出的 HTML，保留内联样式并上传本地图片
 - 共用服务方固定公网 IP：买家将 `8.153.207.214` 加入自己公众号的白名单；自己的 AppID/AppSecret 留在本机，每次调用携带
 - 支持多公众号账号
 - 支持贴图（小绿书）：按顺序上传图片、推送草稿、回读核对；详见 [发布说明](skills/publish/wechat-article/SKILL.md)

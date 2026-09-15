@@ -2,7 +2,7 @@
 name: wechat-article-publish
 slug: wechat-article-publish
 displayName: 微信公众号文章与贴图发布
-version: 1.2.1
+version: 1.3.0
 summary: 把文章或多张贴图送入公众号草稿箱，自动上传图片并核对结果，减少逐张上传和手工整理。
 description: 适用于微信公众号文章或贴图（newspic、小绿书）草稿发布、多图上传、草稿回读核验、正文图片重传和编辑器兼容性修复。
 tags: ["wechat", "公众号", "文章发布", "内容运营"]
@@ -13,6 +13,10 @@ homepage: https://github.com/chenchen1010/wechat-mp-tools
 # 微信公众号文章与贴图发布
 
 面向购买本 Skill 的公众号运营者：在本机准备文章、排版和图片，通过服务方提供的固定公网 IP 推送到**买家自己的公众号草稿箱**，减少反复上传和更换电脑后的白名单配置。
+
+## 本机运行环境
+
+首次在 Skill 目录执行 `python3 -m venv .venv`，再执行 `.venv/bin/python -m pip install -r requirements.txt`。下面的命令在已激活该环境后运行。Markdown、HTML 排版和贴图共用这份依赖清单。
 
 ## 买家首次使用：本地配置自己的公众号
 
@@ -134,3 +138,15 @@ python3 publish.py --type newspic \
 9. 这是推送到草稿箱，不是公开发布或群发。浏览器预览不可用时，分别报告 API 核验和视觉验收的实际状态。
 
 本地回归：在仓库根目录运行 `python3 -m unittest discover -s tests -v` 和 `node --test tests/request-credentials.test.mjs`。
+
+## 把复刻排版保留到草稿箱
+
+先用排版复刻 Skill 提取参考文章样式，再将自己的新内容排成 HTML。把所有新配图保存到本地，在 HTML 中使用相对路径；以下命令会上传图片并保留正文内联样式。
+
+```bash
+python3 publish.py --html ./article.html --title "文章标题" --cover ./cover.png --receipt ./article-receipt.json --env-file /path/to/private.env
+```
+
+同一回执只创建一次草稿，重跑仅恢复已知步骤或核验原草稿。未知写入结果会停止。参考文章依赖外部样式时，主题须区分提取到的规则和推断的默认值，不能宣称像素级复制。
+
+自动封面使用 Nano Banana 2 异步任务，原图和 `.generation.json` 保存在 Markdown 旁；需要本机 `EVOLINK_API_KEY`。本轮已修复旧地址和同步响应假设，但缺少生图凭证，真实生成尚未通过验收。
