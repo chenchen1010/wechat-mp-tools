@@ -1,6 +1,6 @@
 # wechat-mp-tools
 
-微信公众号工具集：排版复刻 + 文章发布 + API 代理。
+微信公众号工具集：排版复刻 + 文章与贴图草稿 + API 代理。
 
 ## 组件
 
@@ -11,6 +11,7 @@ Markdown → 排版 → 微信草稿箱的完整发布流水线。
 - 支持 Wenyan MCP 真实排版
 - 支持 ECS 固定 IP 代理（绕过 IP 白名单）
 - 支持多公众号账号
+- 支持贴图（小绿书）：按顺序上传图片、推送草稿、回读核对；详见 [发布说明](skills/publish/wechat-article/SKILL.md)
 
 ### skills/layout-clone
 

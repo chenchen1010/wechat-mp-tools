@@ -148,7 +148,13 @@ def markdown_to_html(body: str) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description='微信公众号文章发布（ECS 代理）')
-    parser.add_argument('--markdown', '-m', required=True, help='Markdown 文件路径')
+    parser.add_argument('--markdown', '-m', help='Markdown 文件路径')
+    parser.add_argument('--type', choices=['news', 'newspic'], default='news')
+    parser.add_argument('--title', help='贴图标题')
+    parser.add_argument('--content-file', help='贴图纯文本正文文件')
+    parser.add_argument('--images', nargs='+', help='按展示顺序列出的本地 PNG/JPEG 图片')
+    parser.add_argument('--receipt', help='本次推送的持久回执 JSON 路径')
+    parser.add_argument('--dry-run', action='store_true', help='仅校验贴图，不请求网络')
     parser.add_argument('--account', default='default', help='公众号账号别名: default|qwjxqn|jscxbwd')
     parser.add_argument('--author', default='', help='文章作者')
     parser.add_argument('--env-file', default=None, help='.env 文件路径')
@@ -156,6 +162,20 @@ def main():
     args = parser.parse_args()
 
     load_env(Path(args.env_file) if args.env_file else None)
+
+    if args.type == 'newspic':
+        from newspic import run
+        try:
+            run(args, api_post)
+        except Exception as exc:
+            # Avoid exposing credentials embedded in upstream exception text.
+            print(f'贴图未完成（{type(exc).__name__}）；检查参数和回执，勿自动重提。', file=sys.stderr)
+            if isinstance(exc, (ValueError, RuntimeError)):
+                print(str(exc), file=sys.stderr)
+            sys.exit(1)
+        return
+    if not args.markdown or args.dry_run or args.images or args.content_file or args.title or args.receipt:
+        parser.error('文章模式需要 -m；贴图参数和 --dry-run 仅用于 --type newspic')
 
     base_url = os.environ.get('WECHAT_MP_API_BASE_URL', '')
     api_token = os.environ.get('WECHAT_MP_API_TOKEN', '')

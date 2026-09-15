@@ -1,6 +1,6 @@
-# 公众号发布
+# 公众号文章与贴图发布
 
-完整的公众号文章发布流水线：Markdown → Wenyan 真实排版 → 微信草稿箱。
+把文章或按顺序整理的图片送入公众号草稿箱，省去逐张上传和反复粘贴。文章使用 Wenyan 排版；贴图可直接使用本目录的发布脚本。
 
 > 公众号与视频号是微信生态下的两个独立产品。公众号发布文章，视频号发布短视频。
 
@@ -85,11 +85,9 @@ WECHAT_MP_API_ACCOUNT_JSCXBWD=jscxbwd
 
 ## 关于仓库内的 `publish.py`
 
-`publish.py` 目前仍保留作实验/参考脚本，但其中 `render_with_wenyan()` 仍是**模拟渲染**，不是生产级 Wenyan 调用。
+`publish.py --type newspic` 支持贴图草稿：上传前校验、逐图上传、保存回执、回读核验。需要 `python3 -m pip install -r requirements.txt`。完整命令和失败恢复见同目录 `SKILL.md` 的“贴图 / 小绿书草稿”一节。
 
-**因此：默认不要把 `publish.py` 当成正式发布链路。**
-
-如果要真实排版并入草稿箱，优先使用上面的 `mcporter + wenyan-mcp` 方式。
+文章模式默认 `--type news -m article.md`，保留简易 Markdown 兜底；正式文章排版仍优先 Wenyan。脚本不会自动公开发布或群发。
 
 ## 推荐流程
 
