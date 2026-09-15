@@ -96,3 +96,23 @@ test('material uploads preserve local bytes and reject remote fetch inputs', asy
 test('request mode refuses startup without service authorization',()=>{
   assert.throws(()=>createWechatServer({credentialMode:'request',apiToken:''}),/requires API_TOKEN/);
 });
+
+
+test('release symlink starts the actual HTTP server', async t => {
+  const { mkdtemp, symlink, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const { spawn } = await import('node:child_process');
+  const dir=await mkdtemp(join(tmpdir(),'wechat-release-'));
+  t.after(()=>rm(dir,{recursive:true,force:true}));
+  const link=join(dir,'current.mjs');
+  await symlink(fileURLToPath(new URL('../api-server/server.mjs',import.meta.url)),link);
+  const child=spawn(process.execPath,[link],{env:{...process.env,PORT:'0',API_TOKEN:'test',WECHAT_CREDENTIAL_MODE:'request'}});
+  t.after(()=>child.kill());
+  await new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(new Error('server did not start')),3000);
+    child.stdout.once('data',data=>{clearTimeout(timer);assert.match(String(data),/listening/);resolve();});
+    child.once('exit',code=>{clearTimeout(timer);reject(new Error('exited before listening: '+code));});
+  });
+});

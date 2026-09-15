@@ -3,6 +3,7 @@ import http from 'node:http';
 import { URL } from 'node:url';
 import { Buffer } from 'node:buffer';
 import { pathToFileURL } from 'node:url';
+import { realpathSync } from 'node:fs';
 
 export function createWechatServer({ credentialMode = process.env.WECHAT_CREDENTIAL_MODE || 'legacy', apiToken = process.env.API_TOKEN || '', fetchImpl = globalThis.fetch } = {}) {
 const API_TOKEN = apiToken;
@@ -326,7 +327,7 @@ const server = http.createServer(async (req, res) => {
 return server;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   const PORT = Number(process.env.PORT || 18890);
   const server = createWechatServer();
   server.listen(PORT, '127.0.0.1', () => {
