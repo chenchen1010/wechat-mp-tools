@@ -12,7 +12,7 @@
 ```env
 WECHAT_MP_APP_ID=wx_your_own_appid
 WECHAT_MP_APP_SECRET=your_own_appsecret
-WECHAT_MP_API_BASE_URL=https://your-service.example.com/wechat-mp
+WECHAT_MP_API_BASE_URL=https://cs.qwjxqn.xyz/wechat-skill
 WECHAT_MP_API_TOKEN=your_service_access_token
 WECHAT_MP_CREDENTIAL_MODE=request
 ```
@@ -45,3 +45,5 @@ WECHAT_MP_CREDENTIAL_MODE=request
 - 草稿结果未知：先查原回执和草稿箱，不重复创建；回读失败时使用原回执继续查询。
 
 草稿成功不代表已公开发布；正式展示还应在微信后台预览。
+
+2026-09-15：上述新入口已部署并使用真实公众号完成连接、图片上传、文章/贴图创建、更新、回读和凭证拒绝测试。

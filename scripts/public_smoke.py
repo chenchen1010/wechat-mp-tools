@@ -9,11 +9,28 @@ from pathlib import Path
 import sys
 import urllib.error
 import urllib.request
+import urllib.parse
+from html.parser import HTMLParser
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'skills/publish/wechat-article'))
 import publish
 import newspic
+
+
+def image_sources(content):
+    class Images(HTMLParser):
+        def __init__(self):super().__init__();self.sources=[]
+        def handle_starttag(self,tag,attrs):
+            if tag=='img':
+                attrs=dict(attrs);self.sources.append(attrs.get('data-src') or attrs.get('src',''))
+    parser=Images();parser.feed(content);return parser.sources
+
+
+def same_wechat_asset(left,right):
+    # WeChat normalizes http /0?from=appmsg to https /640?from=appmsg.
+    a,b=urllib.parse.urlsplit(left),urllib.parse.urlsplit(right)
+    return a.hostname==b.hostname=='mmbiz.qpic.cn' and a.path.rsplit('/',1)[0]==b.path.rsplit('/',1)[0]
 
 
 def main():
@@ -77,7 +94,7 @@ def main():
         article={'article_type':'news','title':'公网文章实测｜燃烧青年','author':'燃烧青年','content':content,'thumb_media_id':cover['media_id'],'need_open_comment':0,'only_fans_can_comment':0}
         created=mutation('article_create',lambda: publish.create_draft(base,token,'',article))
         got=get_draft(created['media_id'])
-        if 'article_update' not in state['results']:check('article_create_readback',got['title']==article['title'] and body['url'] in got['content'])
+        if 'article_update' not in state['results']:check('article_create_readback',got['title']==article['title'] and got.get('article_type')=='news' and len(image_sources(got['content']))==1 and same_wechat_asset(image_sources(got['content'])[0],body['url']))
         changed={**article,'title':'公网文章实测｜已更新','content':content+'<p>草稿更新验证完成。</p>'}
         mutation('article_update',lambda: call('/wechat/draft/update',{'media_id':created['media_id'],'index':0,'articles':changed}))
         got=get_draft(created['media_id']);check('article_update_readback',got['title']==changed['title'] and '草稿更新验证完成' in got['content'] and got['content'].count('<img')==1)
@@ -101,4 +118,5 @@ if __name__=='__main__':
     except Exception as error:
         # Never dump transport exceptions / credential-bearing URLs or headers.
         print('PUBLIC SMOKE STOPPED: '+type(error).__name__+'; inspect durable receipt, do not repeat uncertain mutations.',file=sys.stderr)
+        if isinstance(error,RuntimeError):print(str(error),file=sys.stderr)
         sys.exit(1)

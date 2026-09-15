@@ -20,3 +20,13 @@
 - Existing legacy mode remains unchanged for older deployments. Buyer instructions prohibit falling back to legacy. Server request mode requires explicit WECHAT_CREDENTIAL_MODE=request; the provided server env template has this setting and contains no buyer credentials.
 - Local verification: 19 Python cases and 6 Node HTTP integration cases pass, including concurrent buyer isolation, missing/invalid credentials, legacy-server refusal, redirect/HTTP refusal, explicit env account selection, and receipt recovery. Node uses mocked WeChat upstream, not real buyer accounts.
 - The request-credential backend has NOT been deployed or live-tested. The earlier successful picture draft used the legacy operator service; it is not evidence for request-mode production operation. No additional draft, payment, or public publish was made.
+
+## 2026-09-15: Request-mode production acceptance completed
+
+- Deployed a separate request-mode service at https://cs.qwjxqn.xyz/wechat-skill, port127.0.0.1:18891, processwechat-skill-api. Existing /wechat-mp body-credentials-v1 has extra unrelated endpoints; it was preserved unchanged.
+- Server release39d8163, SHA256 fd8f3430432ad5f52aa07e75d78d4416473aa23b91dc4a7571ba43e6086f0e5f. Fixed release-symlink startup guard and tested on Node18.20.8 before enabling the new route.
+- 13 public checks passed using operator-authorized local account credentials: connection, negative credentials/auth, image and cover uploads, downloaded image decode, article/picture create/update/readback, picture reorder. No publication, broadcast, payment, or extra draft retry.
+- WeChat normalizes article image URLs to data-src and /640; smoke validation now compares media identity, covered by regression cases.
+- 22 Python tests and 7 Node18 HTTP integration tests pass. PM2 state saved, original/new internal and public health pass; new process has no stored WeChat secret env.
+- Reverse proxy disables request buffering/access logs for new route. Backup at /www/wwwroot/wechat-skill-api/backups/cs.qwjxqn.xyz.conf.before; rollback removes new route/process while preserving old service.
+- Backend visual UI acceptance unavailable due browser site-safety restriction; real draft readback and returned image visual inspection completed. Independent image generation/layout extraction and payment were not exercised by this publishing-API smoke.

@@ -2,7 +2,7 @@
 name: wechat-article-publish
 slug: wechat-article-publish
 displayName: 微信公众号文章与贴图发布
-version: 1.2.0
+version: 1.2.1
 summary: 把文章或多张贴图送入公众号草稿箱，自动上传图片并核对结果，减少逐张上传和手工整理。
 description: 适用于微信公众号文章或贴图（newspic、小绿书）草稿发布、多图上传、草稿回读核验、正文图片重传和编辑器兼容性修复。
 tags: ["wechat", "公众号", "文章发布", "内容运营"]
@@ -20,7 +20,7 @@ homepage: https://github.com/chenchen1010/wechat-mp-tools
 2. 买家使用**自己公众号的 AppID 和 AppSecret**。将其保存到买家本机、已被 Git 忽略的私有 env，权限设为600；不要放进 Skill 包、文档、日志或最终回复。没有配置时引导买家在自己电脑上填写，不让他们发送给卖家人工保存。
 3. 本地配置：
    - `WECHAT_MP_APP_ID`、`WECHAT_MP_APP_SECRET`：买家自己的公众号凭证。
-   - `WECHAT_MP_API_BASE_URL`：服务方提供的 HTTPS 服务地址。
+   - `WECHAT_MP_API_BASE_URL=https://cs.qwjxqn.xyz/wechat-skill`：买家模式 HTTPS 服务地址。
    - `WECHAT_MP_API_TOKEN`：访问该服务的凭证，与公众号 AppSecret 是两回事；按服务方交付配置。
    - `WECHAT_MP_CREDENTIAL_MODE=request`：每次请求携带本地公众号凭证，是买家模式默认值。
 4. 明确告知买家：每次调用时，凭证会经 HTTPS 临时交给服务器，用于从固定公网 IP 请求微信；服务器不将它们写入文件、数据库、日志或跨请求缓存。不需要卖家预存、人工绑定公众号，也不依赖 `default` 等服务端账号别名。
@@ -43,7 +43,7 @@ homepage: https://github.com/chenchen1010/wechat-mp-tools
 - 该模式通过微信 `stable_token` 使用本次凭证获取调用凭据，不在本服务跨请求缓存公众号凭证或 access_token。请求结束后不保留应用级引用；这不是“服务器完全接触不到凭证”。
 - HTTPS 入口、反向代理、监控/APM 都不得记录公众号凭证头、请求正文或含 token 的上游 URL；不要开启包含这些内容的调试抓包或请求日志。
 - 旧自用服务兼容模式 `legacy` 保留原逻辑，仅供已有部署过渡；买家入口必须运行 `request` 模式，不能暴露旧账号路由作为降级方案。
-- 当前源码和本地测试支持 request 模式；是否已部署须查看实际 `/health`，不能把本地完成说成线上已启用。购买权益验证与计费不是本次公众号凭证转发的实现范围。
+- 2026-09-15：上述 request 入口已部署并通过真实公众号公网发布链路测试。每次使用仍须检查实际 `/health`。购买权益验证与计费不在本次公众号凭证转发的实现范围。
 
 ## Before Creating Or Updating Drafts
 
