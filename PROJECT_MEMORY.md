@@ -41,3 +41,12 @@
 - Local suite33Python cases and7Node integration cases pass. Generation success/failure/resume tests use mocked provider; they are NOT paid/live image generation evidence.
 - BLOCKER: no usable EVOLINK_API_KEY found in the current environment or relevant local configs. Asked user for private env path. No paid generation submitted. Real generation, image editing/reference generation, and new-generated-image-to-draft acceptance remain outstanding. Do not declare all functions accepted or ready for sale.
 - Evidence is outside Git at /Users/burning/Documents/workbuddy/outputs/wechat-full-workflow-20260915. Earlier publish-API live receipts remain in wechat-public-smoke-20260915. Browser policy still prevents WeChat backend UI acceptance; local previews and API readback are separate evidence.
+
+## 2026-09-15: Agent-native illustration handoff supersedes EvoLink requirement
+
+- User explicitly changed WeChat image scope: the Skill writes prompts and guides the user's current Agent to generate illustrations using its available tools. No fixed provider integration or image-provider Key is required.
+- Removed the publishing package's EvoLink helper and automatic-cover call. Missing Markdown cover now returns needs_image, a prompt, ratio, target path and resume instruction (exit2, no upload/draft); --cover resumes with an Agent-generated local image. --cover-prompt is prompt text only.
+- Added references/image-prompts.md for content-specific cover/body/picture prompts, placement/order, actual host capability discovery, local image retrieval and visual QA. If no image tool is available, deliver prompts and wait for real images; never claim a prompt or placeholder is an image.
+- Buyer docs/env template no longer ask for image-provider credentials. The separate skills/evolink-nano-banana-2 remains an independent opt-in tool, outside the WeChat product dependency and acceptance scope.
+- Previous missing EVOLINK_API_KEY blocker is obsolete for this product. No key or provider generation approval is needed to complete this change.
+- Local34Python tests and7Node tests pass, including missing cover with a legacy provider key making no generation request, and Agent-supplied cover resuming without a provider key. No new images, paid generation or drafts were submitted; WorkBuddy/Doubao host-specific image generation has not been exercised in this test.

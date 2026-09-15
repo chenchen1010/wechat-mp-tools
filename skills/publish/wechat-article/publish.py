@@ -129,13 +129,6 @@ def create_draft(base_url: str, token: str, account: str, article: dict) -> dict
     return result
 
 
-def generate_cover_image(evolink_key: str, prompt: str, output_path: str) -> bool:
-    """Generate and save an async Nano Banana 2 task; never silently retry a submission."""
-    from evolink_image import generate
-    generate(evolink_key, prompt, output_path)
-    return True
-
-
 def parse_frontmatter(content: str) -> tuple[dict, str]:
     """解析 YAML frontmatter"""
     meta = {}
@@ -162,7 +155,7 @@ def main():
     parser = argparse.ArgumentParser(description='微信公众号文章发布（ECS 代理）')
     parser.add_argument('--markdown', '-m', help='Markdown 文件路径')
     parser.add_argument('--html', help='已完成排版的本地 HTML')
-    parser.add_argument('--cover', help='HTML 文章本地封面路径')
+    parser.add_argument('--cover', help='Agent 已生成的本地封面路径（文章通用）')
     parser.add_argument('--type', choices=['news', 'newspic'], default='news')
     parser.add_argument('--title', help='贴图或 HTML 文章标题')
     parser.add_argument('--content-file', help='贴图纯文本正文文件')
@@ -172,7 +165,7 @@ def main():
     parser.add_argument('--account', help='服务方为当前使用者绑定的公众号别名；也可从私有 env 读取')
     parser.add_argument('--author', default='', help='文章作者')
     parser.add_argument('--env-file', default=None, help='.env 文件路径')
-    parser.add_argument('--cover-prompt', default='', help='Evolink 封面生成提示词')
+    parser.add_argument('--cover-prompt', default='', help='缺封面时交给当前 Agent 的提示词；脚本不生图')
     args = parser.parse_args()
 
     load_env(Path(args.env_file) if args.env_file else None)
@@ -224,7 +217,7 @@ def main():
     content = md_path.read_text(encoding='utf-8')
     meta, body = parse_frontmatter(content)
     title = meta.get('title', md_path.stem)
-    cover_path = meta.get('cover', '')
+    cover_path = str(Path(args.cover).resolve()) if args.cover else meta.get('cover', '')
     if cover_path:
         cover_path = str((md_path.resolve().parent / cover_path).resolve())
     author = args.author or meta.get('author', '')
@@ -233,22 +226,24 @@ def main():
     prepare_html(rendered_html, md_path.resolve().parent)
     print(f'1/4 解析完成: {title}')
 
-    # 2. 封面
-    temp_cover = None
-    if not cover_path or not Path(cover_path).exists():
-        evolink_key = os.environ.get('EVOLINK_API_KEY', '')
-        if evolink_key:
-            print('2/4 生成封面...')
-            temp_cover = str(md_path.resolve().with_suffix('.cover.png'))
-            prompt = args.cover_prompt or f'Professional cover for: {title}, modern digital art, 16:9'
-            if not generate_cover_image(evolink_key, prompt, temp_cover):
-                sys.exit(1)
-            cover_path = temp_cover
-        else:
-            print('2/4 警告: 无封面且无 EVOLINK_API_KEY，跳过', file=sys.stderr)
-            sys.exit(1)
-    else:
-        print(f'2/4 使用封面: {cover_path}')
+    # Image creation belongs to the user's current Agent, not this publisher.
+    if not cover_path or not Path(cover_path).is_file():
+        target = cover_path or str(md_path.resolve().with_suffix('.cover.png'))
+        print(json.dumps({
+            'status': 'needs_image',
+            'action': 'generate_with_current_agent',
+            'purpose': 'cover',
+            'prompt': args.cover_prompt or (
+                f'为文章《{title}》制作封面。结合正文选取一个具体视觉主体，'
+                '构图简洁，主体集中在画面中部，保留裁切空间，不添加无关文字或水印。'
+            ),
+            'aspect_ratio': '16:9',
+            'output_path': target,
+            'next_step': '使用当前 Agent 可用的生图能力，保存并检查实际 PNG/JPEG 图片；'
+                         '用 --cover 指定该图片后重新运行。当前 Agent 无法生图时，将提示词交给用户。',
+        }, ensure_ascii=False, indent=2))
+        sys.exit(2)
+    print(f'2/4 使用封面: {cover_path}')
 
     # Both Markdown and copied-layout HTML use the same upload + durable receipt path.
     rendered_path = md_path.resolve().with_suffix('.rendered.html')

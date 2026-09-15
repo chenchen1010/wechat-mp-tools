@@ -2,9 +2,9 @@
 name: wechat-article-publish
 slug: wechat-article-publish
 displayName: 微信公众号文章与贴图发布
-version: 1.3.0
-summary: 把文章或多张贴图送入公众号草稿箱，自动上传图片并核对结果，减少逐张上传和手工整理。
-description: 适用于微信公众号文章或贴图（newspic、小绿书）草稿发布、多图上传、草稿回读核验、正文图片重传和编辑器兼容性修复。
+version: 1.4.0
+summary: 为文章和贴图准备配图提示词，配合当前 Agent 生图，再把排版好的内容送入公众号草稿箱。
+description: 适用于微信公众号文章或贴图（newspic、小绿书）的配图提示词规划、当前 Agent 生图协作、草稿发布、多图上传、回读核验及编辑器兼容性修复。
 tags: ["wechat", "公众号", "文章发布", "内容运营"]
 license: MIT
 homepage: https://github.com/chenchen1010/wechat-mp-tools
@@ -114,7 +114,7 @@ After every create/update:
 给出标题、短文案和按顺序排列的图片，即可放入公众号草稿箱供预览。适合图片卡片、作品集和简短分享；文章仍走上面的文章排版流程。
 
 1. 首次使用先完成上面的本地凭证和白名单配置；已有配置直接复用买家本机 env，不询问服务端账号别名。
-2. 若需要创作新图，先使用用户指定的生图工具；付费前遵守该工具的报价和授权要求。也可直接复用用户已有图片。本脚本只负责上传，不触发生图。
+2. 若需要创作新图，按[配图提示词与当前 Agent 协作](references/image-prompts.md)生成逐图提示词，由当前 Agent 的可用生图能力出图，检查后按顺序传入。本脚本只负责上传已准备好的图片。
 3. 用本目录 `requirements.txt` 安装 Pillow；准备纯文本正文文件和 1–20 张 PNG/JPEG。每张小于 10 MiB；标题 1–32 个字符，正文采用保守上限 2048 UTF-8 字节。图片全部通过本地解码、大小和重复检查后才允许上传。
 4. 先 `--dry-run`；检查图片预览及顺序，再按用户授权执行真实推送：
 
@@ -149,4 +149,8 @@ python3 publish.py --html ./article.html --title "文章标题" --cover ./cover.
 
 同一回执只创建一次草稿，重跑仅恢复已知步骤或核验原草稿。未知写入结果会停止。参考文章依赖外部样式时，主题须区分提取到的规则和推断的默认值，不能宣称像素级复制。
 
-自动封面使用 Nano Banana 2 异步任务，原图和 `.generation.json` 保存在 Markdown 旁；需要本机 `EVOLINK_API_KEY`。本轮已修复旧地址和同步响应假设，但缺少生图凭证，真实生成尚未通过验收。
+## 配图：提示词交给当前 Agent
+
+需要封面、正文插图或多张贴图时，先读[配图提示词与当前 Agent 协作](references/image-prompts.md)。根据内容给出每张图的提示词、比例、插入位置/顺序及目标文件名；调用用户当前 Agent 实际可用的生图能力，取得并检查图片后继续排版与推送。
+
+发布脚本不调用生图供应商，也不需要生图服务 Key。缺封面时返回 `status: needs_image` 和提示词交接信息，退出码2，尚未创建草稿；`--cover-prompt` 只传递提示词。生成后用 `--cover ./images/cover.png` 或 Markdown 的 `cover` 指定真实图片。正文/贴图缺图时同样先完成配图，不把占位图当成成功。

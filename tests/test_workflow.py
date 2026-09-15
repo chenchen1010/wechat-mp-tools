@@ -8,7 +8,9 @@ from unittest.mock import patch
 from PIL import Image
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'skills/publish/wechat-article'))
-import evolink_image as evo
+import importlib.util
+_spec=importlib.util.spec_from_file_location('standalone_evolink',ROOT/'skills/evolink-nano-banana-2/scripts/evolink_image.py')
+evo=importlib.util.module_from_spec(_spec);_spec.loader.exec_module(evo)
 import article_html
 
 class WorkflowTests(unittest.TestCase):
@@ -59,8 +61,6 @@ class WorkflowTests(unittest.TestCase):
         for forbidden in ['<script','<pre','<code','onerror','javascript:']:self.assertNotIn(forbidden,s)
     def test_missing_images_fail_before_network(self):
         with self.assertRaises(ValueError):article_html.prepare_html('<img src="absent.png">',self.out.parent)
-    def test_distributable_generator_matches(self):
-        self.assertEqual((ROOT/'skills/evolink-nano-banana-2/scripts/evolink_image.py').read_bytes(),Path(evo.__file__).read_bytes())
 
 if __name__=='__main__':unittest.main()
 
@@ -99,3 +99,37 @@ class ArticleWorkflowTests(unittest.TestCase):
             with patch.dict('os.environ',{'WECHAT_MP_API_BASE_URL':'https://example.test','WECHAT_MP_API_TOKEN':'private'}):
                 a=article_html.run(args,publisher);b=article_html.run(args,publisher)
             self.assertEqual(calls,['create']);self.assertEqual(a['status'],'verified');self.assertEqual(b['image_count'],1)
+
+class AgentImageHandoffTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.root=Path(self.tmp.name);self.md=self.root/'article.md'
+        self.md.write_text('---\ntitle: 周末读书\n---\n一本书，一段安静的时间。')
+        self.env={'WECHAT_MP_CREDENTIAL_MODE':'request','WECHAT_MP_APP_ID':'wx'+'a'*16,
+                  'WECHAT_MP_APP_SECRET':'b'*32,'WECHAT_MP_API_BASE_URL':'https://example.test',
+                  'WECHAT_MP_API_TOKEN':'service-token'}
+    def test_missing_cover_hands_off_even_if_old_provider_key_exists(self):
+        import publish
+        output=io.StringIO()
+        with patch.dict('os.environ',{**self.env,'EVOLINK_API_KEY':'unused-old-key'},clear=True), \
+             patch.object(sys,'argv',['publish.py','-m',str(self.md),'--cover-prompt','书与茶杯，暖色摄影，无文字']), \
+             patch.object(publish,'load_env'), patch.object(publish.urllib.request,'urlopen') as network, \
+             patch('sys.stdout',output):
+            with self.assertRaises(SystemExit) as ex: publish.main()
+        self.assertEqual(ex.exception.code,2);network.assert_not_called()
+        result=json.loads(output.getvalue()[output.getvalue().index('{'):])
+        self.assertEqual(result['status'],'needs_image')
+        self.assertEqual(result['prompt'],'书与茶杯，暖色摄影，无文字')
+        self.assertFalse(self.md.with_suffix('.cover.png').exists())
+        self.assertFalse(self.md.with_suffix('.draft.json').exists())
+    def test_agent_image_resumes_publication_without_provider_key(self):
+        import publish
+        image=self.root/'agent-cover.png';Image.new('RGB',(20,12),'green').save(image)
+        with patch.dict('os.environ',self.env,clear=True), \
+             patch.object(sys,'argv',['publish.py','-m',str(self.md),'--cover',str(image)]), \
+             patch.object(publish,'load_env'), patch.object(article_html,'run') as run, \
+             patch('sys.stdout',io.StringIO()):
+            publish.main()
+        self.assertEqual(run.call_count,1)
+        self.assertEqual(Path(run.call_args.args[0].cover),image.resolve())
+        self.assertTrue(Path(run.call_args.args[0].html).is_file())
