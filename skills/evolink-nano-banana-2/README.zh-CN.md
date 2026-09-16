@@ -197,16 +197,16 @@ claude mcp add evolink-media -e EVOLINK_API_KEY=your-key -- npx -y @evolinkai/ev
 
 ```bash
 # 文生图
-./scripts/evolink-image-gen.sh "山间日落水彩画" --size 1024x1536
+./scripts/evolink-image-gen.sh "山间日落水彩画" --size 2:3 --output ./generated-image.png
 
 # 带参考图编辑
-./scripts/evolink-image-gen.sh "改成复古风格" --image "https://example.com/photo.jpg"
+./scripts/evolink-image-gen.sh "改成复古风格" --image "https://example.com/photo.jpg" --output ./generated-image.png
 
 # 批量生成（4 张变体）
-./scripts/evolink-image-gen.sh "咖啡店 logo 设计" --n 4
+./scripts/evolink-image-gen.sh "咖啡店 logo 设计" --n 1 --output ./generated-image.png
 
 # 轻量版快速迭代
-./scripts/evolink-image-gen.sh "抽象几何图案" --model nano-banana-2-lite
+./scripts/evolink-image-gen.sh "抽象几何图案" --model nano-banana-2-lite --output ./generated-image.png
 ```
 
 ### API 参数

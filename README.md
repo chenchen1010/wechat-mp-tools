@@ -1,6 +1,6 @@
 # wechat-mp-tools
 
-微信公众号工具集：排版复刻 + 文章发布 + API 代理。
+微信公众号工具集：排版复刻 + 配图提示词与当前 Agent 生图协作 + 文章与贴图草稿。
 
 ## 组件
 
@@ -8,9 +8,11 @@
 
 Markdown → 排版 → 微信草稿箱的完整发布流水线。
 
-- 支持 Wenyan MCP 真实排版
-- 支持 ECS 固定 IP 代理（绕过 IP 白名单）
+- 按内容生成配图提示词，交给当前 Agent 的可用生图能力；发布流程不依赖生图供应商 Key
+- 支持 Markdown 渲染及接收排版工具输出的 HTML，保留内联样式并上传本地图片
+- 共用服务方固定公网 IP：买家将 `8.153.207.214` 加入自己公众号的白名单；自己的 AppID/AppSecret 留在本机，每次调用携带
 - 支持多公众号账号
+- 支持贴图（小绿书）：按顺序上传图片、推送草稿、回读核对；详见 [发布说明](skills/publish/wechat-article/SKILL.md)
 
 ### skills/layout-clone
 
@@ -24,7 +26,7 @@ Markdown → 排版 → 微信草稿箱的完整发布流水线。
 
 ```bash
 cp .env.example .env
-# 填入你的微信公众号 AppID / AppSecret
+# 填入买家自己的AppID/AppSecret，以及服务方地址和访问凭证
 ```
 
 ## 依赖
@@ -39,3 +41,7 @@ pip install beautifulsoup4
 # API 代理
 node api-server/server.mjs
 ```
+
+买家配置与服务方部署要求见[使用说明](skills/publish/wechat-article/README.md)。买家模式使用每次携带的本地公众号凭证，不需要卖家预存或绑定公众号；服务器须启用 `WECHAT_CREDENTIAL_MODE=request`。
+
+仓库中的 `skills/evolink-nano-banana-2` 是独立可选工具，不属于公众号 Skill 的配图依赖或必测链路。
