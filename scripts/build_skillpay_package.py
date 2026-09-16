@@ -29,7 +29,7 @@ def build(output):
     skill = (PUBLISH / 'SKILL.md').read_text()
     skill = skill.replace('name: wechat-article-publish', 'name: ' + SLUG).replace('slug: wechat-article-publish', 'slug: ' + SLUG)
     skill = skill.replace('displayName: 微信公众号文章与贴图发布', 'displayName: 公众号排版配图发布助手')
-    skill = skill.replace('version: 1.4.1', 'version: 1.0.0')
+    skill = skill.replace('version: 1.4.2', 'version: 1.0.0')
     skill = skill.replace('description: 适用于微信公众号文章或贴图', 'description: 适用于微信公众号参考排版复刻、文章或贴图')
     marker = '## 本机运行环境'
     skill = skill.replace(marker, '''## 一次完成排版、配图和草稿
@@ -65,7 +65,7 @@ def build(output):
 
 1. 将整个文件夹安装到当前 Agent 实际使用的 skills 目录，重新加载后让 Agent 读取 SKILL.md。
 2. 需要 Python3.10+。在本包根目录创建虚拟环境并安装 requirements.txt。
-3. 将 .env.example 复制为本机私有 .env，填写你自己公众号的 AppID、AppSecret，以及服务方提供的服务访问凭证。保持文件仅自己可读写，不上传到 Git。
+3. 将 .env.example 复制为本机私有 .env，填写你自己公众号的 AppID、AppSecret；服务地址与模式已在模板中提供，无需额外服务令牌。保持文件仅自己可读写，不上传到 Git。
 4. 在自己公众号的开发配置中，将服务器公网 IP 8.153.207.214 追加到白名单。账号须具备微信对应素材和草稿权限。
 5. 告诉 Agent：“参考这篇文章的排版，为我的新文章准备配图，并推送到我的公众号草稿箱。”
 
@@ -73,7 +73,7 @@ def build(output):
 
 售价9.99元，买断完整 Skill 文件。当前 Agent 或第三方生图工具的额度、订阅和生成费用不包含在本 Skill 售价内。图片能力以当前环境实际可用的工具为准。
 
-公众号凭证保留在你本机，每次请求经 HTTPS 临时发送给固定 IP 服务使用。服务器不保存买家公众号凭证，不需要卖家绑定你的公众号。服务访问凭证与公众号 AppSecret 是两回事，不包含在此公共交付包内。
+公众号凭证保留在你本机，每次请求经 HTTPS 临时发送给固定 IP 服务使用。服务器不保存买家公众号凭证，不需要卖家绑定你的公众号。买家只需配置自己的 AppID/AppSecret 和微信 IP 白名单，无需额外领取服务访问凭证。
 
 排版是根据可提取样式近似还原，微信可能过滤部分样式。遇到参考链接无法读取时可使用已保存的本地 HTML。推送成功仅表示草稿已核验，不代表文章已公开发布或群发。
 ''')

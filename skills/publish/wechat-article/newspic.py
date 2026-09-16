@@ -142,8 +142,8 @@ def run(args, api):
         return
     base_url = os.environ.get('WECHAT_MP_API_BASE_URL', '').rstrip('/')
     token = os.environ.get('WECHAT_MP_API_TOKEN', '')
-    if not base_url or not token:
-        raise ValueError('需要配置 WECHAT_MP_API_BASE_URL 和 WECHAT_MP_API_TOKEN')
+    if not base_url or (os.environ.get('WECHAT_MP_CREDENTIAL_MODE', 'request') == 'legacy' and not token):
+        raise ValueError('需要配置服务地址；仅旧服务模式另需 WECHAT_MP_API_TOKEN')
     if not args.receipt:
         raise ValueError('真实推送必须指定 --receipt，用于核验和防止重复创建')
     state = publish(api, base_url, token, args.account, args.title, content, images, args.receipt)

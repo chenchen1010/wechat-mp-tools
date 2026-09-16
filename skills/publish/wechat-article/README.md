@@ -10,14 +10,13 @@ Skill 根据内容写好封面、插图和贴图的提示词，让你正在使�
 
 1. 在**自己公众号**的开发配置 → IP 白名单中追加服务方服务器公网 IP **`8.153.207.214`**，保留原有条目。
 2. 将**自己公众号的 AppID、AppSecret** 保存到自己电脑的私有 env 文件，无须卖家代存或绑定。
-3. 使用服务方提供的 HTTPS 地址和服务访问凭证。每次调用时，工具把本地公众号凭证随请求头发送给服务器，服务器临时使用它们向微信上传，不保存到文件、数据库、日志或跨请求缓存。
+3. 使用 Skill 已提供的 HTTPS 地址，无需另外领取服务令牌。每次调用时，工具把本地公众号凭证随请求头发送给服务器，服务器临时使用它们向微信上传，不保存到文件、数据库、日志或跨请求缓存。
 4. 首次推送后，在自己的公众号草稿箱查看结果。
 
 ```env
 WECHAT_MP_APP_ID=wx_your_own_appid
 WECHAT_MP_APP_SECRET=your_own_appsecret
 WECHAT_MP_API_BASE_URL=https://cs.qwjxqn.xyz/wechat-skill
-WECHAT_MP_API_TOKEN=your_service_access_token
 WECHAT_MP_CREDENTIAL_MODE=request
 ```
 
@@ -35,7 +34,7 @@ WECHAT_MP_CREDENTIAL_MODE=request
 
 ## 服务方部署
 
-使用 [服务器配置模板](../../../api-server/.env.example)，设置 `WECHAT_CREDENTIAL_MODE=request`。服务器只保存服务访问令牌等运行配置，不存买家的公众号凭证。
+使用 [服务器配置模板](../../../api-server/.env.example)，设置 `WECHAT_CREDENTIAL_MODE=request`。服务器只保存端口、运行模式等配置，不存买家的公众号凭证。
 
 买家每次提供自己的凭证，服务器只用于本次请求；`account` 别名不会选择任何预存公众号。请求缺少有效凭证立即拒绝。微信调用凭据使用 `stable_token` 获取，服务进程不跨请求缓存。
 

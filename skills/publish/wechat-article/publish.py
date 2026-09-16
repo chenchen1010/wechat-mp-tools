@@ -62,7 +62,9 @@ def api_post(base_url: str, token: str, endpoint: str, payload: dict, timeout: i
     mode = os.environ.get('WECHAT_MP_CREDENTIAL_MODE', 'request')
     if mode not in ('request', 'legacy'):
         raise ValueError('未知公众号凭证模式')
-    headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
+    headers = {'Content-Type': 'application/json'}
+    if mode == 'legacy' and token:
+        headers['Authorization'] = f'Bearer {token}'
     opener = urllib.request.build_opener(NoRedirect())
     if mode == 'request':
         parsed = urllib.parse.urlsplit(base_url)
@@ -208,8 +210,8 @@ def main():
 
     base_url = os.environ.get('WECHAT_MP_API_BASE_URL', '')
     api_token = os.environ.get('WECHAT_MP_API_TOKEN', '')
-    if not base_url or not api_token:
-        print('错误: 需要设置 WECHAT_MP_API_BASE_URL 和 WECHAT_MP_API_TOKEN', file=sys.stderr)
+    if not base_url or (mode == 'legacy' and not api_token):
+        print('错误: 需要配置服务地址；仅旧服务模式另需 WECHAT_MP_API_TOKEN', file=sys.stderr)
         sys.exit(1)
 
     # 1. 解析 Markdown

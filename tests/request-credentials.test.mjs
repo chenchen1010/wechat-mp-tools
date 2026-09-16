@@ -14,7 +14,7 @@ async function setup(t, fetchImpl) {
   t.after(() => new Promise(resolve => {server.close(resolve);server.closeAllConnections();}));
   const base = `http://127.0.0.1:${server.address().port}`;
   const call = (path, body, id=idA, secret=secretA) => fetch(base+path, {
-    method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer service-access',
+    method:'POST', headers:{'Content-Type':'application/json',
       ...(id ? {'X-Wechat-Appid':id} : {}), ...(secret ? {'X-Wechat-Appsecret':secret} : {})},
     body:JSON.stringify(body),
   });
@@ -93,8 +93,26 @@ test('material uploads preserve local bytes and reject remote fetch inputs', asy
   assert.equal(uploads,1);
 });
 
-test('request mode refuses startup without service authorization',()=>{
-  assert.throws(()=>createWechatServer({credentialMode:'request',apiToken:''}),/requires API_TOKEN/);
+test('request mode starts without service token and authenticates with WeChat', async t => {
+  const server=createWechatServer({credentialMode:'request',apiToken:'',fetchImpl:async()=>response({access_token:'only-this-buyer'})});
+  server.listen(0,'127.0.0.1');await once(server,'listening');
+  t.after(()=>new Promise(resolve=>{server.close(resolve);server.closeAllConnections();}));
+  const base=`http://127.0.0.1:${server.address().port}`;
+  const health=await (await fetch(base+'/health')).json();
+  assert.equal(health.authentication,'wechat_credentials');
+  const r=await fetch(base+'/token/test',{method:'POST',headers:{'X-Wechat-Appid':idA,'X-Wechat-Appsecret':secretA,'Content-Type':'application/json'},body:'{}'});
+  assert.equal(r.status,200);assert.equal((await r.json()).ok,true);
+  assert.equal((await fetch(base+'/wechat/draft/add',{method:'POST',body:'{}'})).status,400);
+});
+
+test('legacy mode still rejects absent or wrong service tokens', async t => {
+  const server=createWechatServer({credentialMode:'legacy',apiToken:'legacy-private',fetchImpl:async()=>{throw Error('must not reach upstream');}});
+  server.listen(0,'127.0.0.1');await once(server,'listening');
+  t.after(()=>new Promise(resolve=>{server.close(resolve);server.closeAllConnections();}));
+  const base=`http://127.0.0.1:${server.address().port}`;
+  for(const authorization of ['', 'Bearer wrong']) {
+    assert.equal((await fetch(base+'/token/test',{method:'POST',headers:{authorization},body:'{}'})).status,401);
+  }
 });
 
 

@@ -9,7 +9,6 @@ export function createWechatServer({ credentialMode = process.env.WECHAT_CREDENT
 const API_TOKEN = apiToken;
 const REQUEST_CREDENTIALS = credentialMode === 'request';
 if (!['legacy', 'request'].includes(credentialMode)) throw new Error('invalid credential mode');
-if (REQUEST_CREDENTIALS && !API_TOKEN) throw new Error('request mode requires API_TOKEN');
 const fetch = fetchImpl;
 const TOKEN_SKEW_MS = 60_000;
 const BODY_LIMIT = 30 * 1024 * 1024;
@@ -79,6 +78,9 @@ function parseJsonBody(req) {
 }
 
 function requireAuth(req) {
+  // Buyer authentication uses the current AppID/AppSecret with WeChat below.
+  // Preserve the service-token gate only for the legacy stored-account service.
+  if (REQUEST_CREDENTIALS) return true;
   if (!API_TOKEN) return true;
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
@@ -246,6 +248,7 @@ const server = http.createServer(async (req, res) => {
         ok: true,
         service: 'wechat-mp-api',
         credential_mode: credentialMode,
+        authentication: REQUEST_CREDENTIALS ? 'wechat_credentials' : 'legacy_service_token',
         ...(REQUEST_CREDENTIALS ? {} : { accounts: availableAccounts() }),
         now: new Date().toISOString(),
       });

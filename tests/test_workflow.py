@@ -96,7 +96,7 @@ class ArticleWorkflowTests(unittest.TestCase):
             def create(*a):calls.append('create');holder.update(a[-1]);return {'media_id':'draft1'}
             def api(*a):return {'news_item':[holder]}
             publisher=SimpleNamespace(upload_body_image=lambda *a:'https://mmbiz.qpic.cn/mmbiz_png/asset/0',upload_cover=lambda *a:'cover1',create_draft=create,api_post=api)
-            with patch.dict('os.environ',{'WECHAT_MP_API_BASE_URL':'https://example.test','WECHAT_MP_API_TOKEN':'private'}):
+            with patch.dict('os.environ',{'WECHAT_MP_API_BASE_URL':'https://example.test'}):
                 a=article_html.run(args,publisher);b=article_html.run(args,publisher)
             self.assertEqual(calls,['create']);self.assertEqual(a['status'],'verified');self.assertEqual(b['image_count'],1)
 
@@ -106,8 +106,7 @@ class AgentImageHandoffTests(unittest.TestCase):
         self.root=Path(self.tmp.name);self.md=self.root/'article.md'
         self.md.write_text('---\ntitle: 周末读书\n---\n一本书，一段安静的时间。')
         self.env={'WECHAT_MP_CREDENTIAL_MODE':'request','WECHAT_MP_APP_ID':'wx'+'a'*16,
-                  'WECHAT_MP_APP_SECRET':'b'*32,'WECHAT_MP_API_BASE_URL':'https://example.test',
-                  'WECHAT_MP_API_TOKEN':'service-token'}
+                  'WECHAT_MP_APP_SECRET':'b'*32,'WECHAT_MP_API_BASE_URL':'https://example.test'}
     def test_missing_cover_hands_off_even_if_old_provider_key_exists(self):
         import publish
         output=io.StringIO()

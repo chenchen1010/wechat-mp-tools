@@ -167,6 +167,7 @@ class PictureTests(unittest.TestCase):
         req = opener.open.call_args_list[1].args[0]
         self.assertEqual(req.get_header('X-wechat-appid'), values['WECHAT_MP_APP_ID'])
         self.assertEqual(req.get_header('X-wechat-appsecret'), values['WECHAT_MP_APP_SECRET'])
+        self.assertIsNone(req.get_header('Authorization'))
         self.assertNotIn('account', json.loads(req.data))
         self.assertNotIn(values['WECHAT_MP_APP_SECRET'], req.full_url)
         self.assertNotIn(values['WECHAT_MP_APP_SECRET'], req.data.decode())

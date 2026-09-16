@@ -51,7 +51,7 @@ def run(args, publisher):
     soup, files = prepare_html(html_path.read_text(), html_path.parent)
     cover = Path(args.cover).resolve()
     with Image.open(cover) as im: im.load()
-    base = os.environ['WECHAT_MP_API_BASE_URL']; token = os.environ['WECHAT_MP_API_TOKEN']
+    base = os.environ['WECHAT_MP_API_BASE_URL']; token = os.environ.get('WECHAT_MP_API_TOKEN', '')
     intent = {'html':str(soup), 'title':args.title, 'author':args.author, 'account':args.account,
               'base':base, 'cover':hashlib.sha256(cover.read_bytes()).hexdigest(),
               'images':{k:hashlib.sha256(p.read_bytes()).hexdigest() for k,p in files.items()}}
