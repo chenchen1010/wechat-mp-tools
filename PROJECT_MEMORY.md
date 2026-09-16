@@ -57,3 +57,13 @@
 - Verified official https://skillhub.cn/install/skillhub.md. Instructions require explicit --dir to the current Agent's actual skills directory; preserve host-specific discovery/reload requirements.
 - Updated illustration reference, skill entrypoint, buyer README and needs_image CLI response with exact name, slug and installation guide. Once installed and discoverable, read its own SKILL.md and reuse the prepared prompts to continue.
 - This changes the buyer guidance; it does not install Image2 in this development environment or trigger image generation/payment. Existing native generation remains the first choice.
+
+## 2026-09-16: SkillPay buyout listing prepared, submission blocked
+
+- User authorized submitting the WeChat Skill at https://skillpay.alipay.com/creator/product-new for9.99yuan buyout.
+- Added scripts/build_skillpay_package.py. Explicit allowlist builds one self-contained wechat-content-studio package with article/picture publisher, layout extractor, image prompt/Image2 guidance and dependency/config examples. No credentials or unrelated provider tools are included.
+- Artifact: /Users/burning/Documents/workbuddy/outputs/wechat-skillpay-20260916/release/wechat-content-studio-1.0.0.zip. SHA256 cf49239dc1ce82a7f42c57815be67c9e3b5a3ba5c91000347e37524bd410cc58,27993bytes,11files. ZIP integrity, absence of actual local secrets, fresh-extract picture dry-run, publisher help and real saved-HTML extraction pass.
+- Filled the existing signed-in Chrome SkillPay form with name公众号排版配图发布助手,301-character description,price9.99,buyout selected,free trials0. Description distinguishes drafts from public posting and excludes third-party generation costs.
+- Upload attempt via the supported file chooser failed with Not allowed. Chrome upload troubleshooting requires user to enable Allow access to file URLs for the ChatGPT browser extension. User notified using the prescribed message. No upload or submission succeeded; do not recreate product or claim review pending.
+- Also asked how service access credentials will be delivered to buyers: manual seller delivery or purchase-verified automatic delivery. AppID/AppSecret remain buyer-local; service API_TOKEN is a separate required credential and is not packaged. Await answer before finalizing fulfillment copy and submitting.
+- Browser3 Chrome KindleBIg,tab992398910 remains at product-new and marked for handoff. Current form does not show a new legal-agreement action. Package/buyer delivery guidance and upload permission must be resolved to finish.
